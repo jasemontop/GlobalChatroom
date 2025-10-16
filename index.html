@@ -1,32 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🌍 Global Chatroom</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <div id="chat-container">
     <h1>🌍 Global Chatroom</h1>
 
-    <div id="login-box">
-      <input id="username" placeholder="Enter your name..." autocomplete="off">
-      <input id="color" type="color" value="#4caf50">
-      <input id="room" placeholder="Party name (e.g. Family)">
-      <input id="password" placeholder="Password (optional)">
-      <button id="join-btn">Join</button>
-    </div>
+    <!-- USERNAME -->
+    <form id="usernameForm" class="card">
+      <h2>Join the party</h2>
+      <input type="text" id="usernameInput" placeholder="Pick a username…" required />
+      <button type="submit">Enter Chat</button>
+      <p class="hint">You’ll appear to everyone with this name.</p>
+    </form>
 
-    <div id="chat-box" style="display:none;">
-      <h2 id="room-title"></h2>
-      <ul id="messages"></ul>
-      <form id="form">
-        <input id="input" placeholder="Type a message..." autocomplete="off">
-        <button type="submit">Send</button>
-      </form>
+    <!-- CHAT + SIDEBAR -->
+    <div id="chatContainer" class="card grid" style="display:none;">
+      <div class="left">
+        <div id="chat" class="messages"></div>
+
+        <!-- composer -->
+        <div class="composer">
+          <input id="messageInput" type="text" placeholder="Type a message… (Enter to send)"/>
+          <button id="sendButton" type="button">Send</button>
+        </div>
+
+        <!-- PARTY CONTROLS -->
+        <div class="card" style="margin-top:10px;">
+          <h3 style="margin-bottom:8px;">Party Controls</h3>
+          <div class="party-controls">
+            <label>Party Name:</label>
+            <input type="text" id="partyNameInput" placeholder="e.g., Family, Friends, Study Group"/>
+
+            <label>Password:</label>
+            <input type="text" id="partyPasswordInput" placeholder="leave empty for Public"/>
+
+            <div class="party-actions">
+              <button id="createPartyBtn" type="button">Create Party</button>
+              <button id="joinPartyBtn" type="button">Join Party</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="right">
+        <h3>Online now</h3>
+        <ul id="userList" class="users"></ul>
+
+        <h3 style="margin-top:12px;">Available Parties</h3>
+        <div id="partiesList" class="users"></div>
+      </div>
     </div>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
+  <script>
+    // Enter key sends message
+    const input = document.getElementById('messageInput');
+    const send = document.getElementById('sendButton');
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
+  </script>
 </body>
 </html>
