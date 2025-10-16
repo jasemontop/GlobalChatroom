@@ -1,4 +1,4 @@
-.js
+// script.js
 const socket = io();
 
 let username = "";
