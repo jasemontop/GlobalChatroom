@@ -51,7 +51,7 @@ h1 {
   animation:titleGlow 2.6s ease-in-out infinite;
 }
 @keyframes titleGlow {
-  0%,100%{ text-shadow: 0 0 10px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
+  0%,100{ text-shadow: 0 0 10px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
   50%{ text-shadow: 0 0 18px rgba(76,175,80,.95), 0 0 30px rgba(0,188,212,.15);}
 }
 
@@ -314,36 +314,7 @@ audio { display: none; } /* hide players */
   transform: scale(1.05);
 }
 
-/* Change Name Color button */
-#changeColorContainer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#changeColorBtn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #2a2f36;
-  color: #eee;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-
-#changeColorBtn:hover {
-  background: #3b414b;
-}
-
-#nameColorPicker {
-  width: 40px;
-  height: 32px;
-  border: none;
-  cursor: pointer;
-}
-
-/* === Name Color Button === */
+/* ===== NAME COLOR PICKER ===== */
 #changeColorContainer {
   display: none;
   margin-top: 12px;
@@ -362,27 +333,26 @@ audio { display: none; } /* hide players */
   cursor: pointer;
   transition: background 0.2s;
 }
-
 #changeColorBtn:hover {
   background: #2a2f36;
 }
 
 #nameColorPicker {
   display: none;
-  position: relative;
-}
-
-#nameColorPicker.visible {
-  display: inline-block;
   width: 50px;
   height: 35px;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
+  border: none;
+  padding: 0;
+}
+#nameColorPicker.visible {
+  display: inline-block;
 }
 
 #closeColorPicker {
   display: none;
+  margin-left: 6px;
   padding: 4px 10px;
   border: none;
   border-radius: 6px;
@@ -391,7 +361,9 @@ audio { display: none; } /* hide players */
   color: #eee;
   font-weight: bold;
 }
-
 #nameColorPicker.visible + #closeColorPicker {
   display: inline-block;
+}
+#closeColorPicker:hover {
+  background: #3b414b;
 }
