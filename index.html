@@ -25,8 +25,41 @@
       <input type="color" id="nameColorPicker" style="display:none;" />
     </div>
 
-    <!-- CHAT + SIDEBAR -->
+    <!-- CHAT + FEATURES BOX -->
     <div id="chatContainer" class="card grid" style="display:none;">
+      
+      <!-- Features box on left -->
+      <div class="features-box">
+        <!-- PARTY CONTROLS -->
+        <div class="card" style="margin-bottom:12px;">
+          <h3>Party Controls</h3>
+          <div class="party-controls">
+            <label>Party Name:</label>
+            <input type="text" id="partyNameInput" placeholder="e.g., Family, Friends, Study Group"/>
+            <label>Password:</label>
+            <input type="text" id="partyPasswordInput" placeholder="leave empty for Public"/>
+            <div class="party-actions">
+              <button id="createPartyBtn" type="button">Create Party</button>
+              <button id="joinPartyBtn" type="button">Join Party</button>
+              <button id="leavePartyBtn" type="button">Leave Party</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ONLINE MEMBERS -->
+        <div class="card" style="margin-bottom:12px;">
+          <h3>Online now</h3>
+          <ul id="userList" class="users"></ul>
+        </div>
+
+        <!-- AVAILABLE PARTIES -->
+        <div class="card">
+          <h3>Available Parties</h3>
+          <div id="partiesList" class="users"></div>
+        </div>
+      </div>
+
+      <!-- Chat area on right -->
       <div class="left">
         <div id="chat" class="messages"></div>
 
@@ -36,34 +69,8 @@
           <button id="sendButton" type="button">Send</button>
           <div id="typingIndicator" class="system" style="display:none;">Someone is typing…</div>
         </div>
-
-        <!-- PARTY CONTROLS -->
-        <div class="card" style="margin-top:10px;">
-          <h3 style="margin-bottom:8px;">Party Controls</h3>
-          <div class="party-controls">
-            <label>Party Name:</label>
-            <input type="text" id="partyNameInput" placeholder="e.g., Family, Friends, Study Group"/>
-
-            <label>Password:</label>
-            <input type="text" id="partyPasswordInput" placeholder="leave empty for Public"/>
-
-            <div class="party-actions">
-              <button id="createPartyBtn" type="button">Create Party</button>
-              <button id="joinPartyBtn" type="button">Join Party</button>
-              <button id="leavePartyBtn" type="button">Leave Party</button>
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <div class="right">
-        <h3>Online now</h3>
-        <ul id="userList" class="users"></ul>
-
-        <h3 style="margin-top:12px;">Available Parties</h3>
-        <div id="partiesList" class="users"></div>
-      </div>
     </div>
   </div>
 
