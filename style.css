@@ -324,3 +324,16 @@ h1 {
   display: inline-block;
 }
 
+/* Delete button for messages */
+.message .delete-btn {
+  float: right;
+  background: transparent;
+  border: none;
+  color: #ff5555;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+}
+.message .delete-btn:hover {
+  color: #ff0000;
+}
