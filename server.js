@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -98,7 +99,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // === Send image ===
   socket.on("sendImage", ({ image, party }) => {
     const user = users[socket.id];
     const uname = user?.name || "Anonymous";
