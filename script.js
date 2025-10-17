@@ -5,7 +5,7 @@ let username = localStorage.getItem("chatUsername") || "";
 let savedColor = localStorage.getItem("chatColor") || "#ffd700";
 let currentParty = null;
 
-// DOM
+// DOM Elements
 const usernameForm = document.getElementById("usernameForm");
 const usernameInput = document.getElementById("usernameInput");
 const usernameColorInput = document.getElementById("usernameColor");
@@ -20,8 +20,11 @@ const partyPasswordInput = document.getElementById("partyPasswordInput");
 const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
 const leavePartyBtn = document.getElementById("leavePartyBtn");
+const changeColorContainer = document.getElementById("changeColorContainer");
+const changeColorBtn = document.getElementById("changeColorBtn");
+const nameColorPicker = document.getElementById("nameColorPicker");
 
-// --- Universal sound system ---
+// --- Universal sound ---
 const playSound = (file) => {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   fetch(file)
@@ -44,7 +47,7 @@ const playSound = (file) => {
     .catch(err => console.warn("Sound error:", err));
 };
 
-// --- Paste image but send only on Enter/Send ---
+// --- Image paste preview ---
 let pastedImageData = null;
 document.addEventListener("paste", (event) => {
   const items = event.clipboardData?.items;
@@ -93,19 +96,16 @@ document.addEventListener("paste", (event) => {
 });
 
 // --- Unlock Chrome audio ---
-const sndSend = document.getElementById("sndSend");
-const sndRecv = document.getElementById("sndRecv");
 const unlockAudio = () => {
   const silent = document.createElement("video");
   silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA==";
   silent.muted = true;
   silent.play().catch(()=>{});
   setTimeout(() => silent.remove(), 2000);
-  [sndSend, sndRecv].forEach(snd => { if (!snd) return; playSound("rec.mp3"); });
 };
 window.addEventListener("click", unlockAudio, { once: true });
 
-// --- Username form submission ---
+// --- Username form ---
 usernameForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = (usernameInput.value || "").trim();
@@ -118,18 +118,15 @@ usernameForm.addEventListener("submit", (e) => {
   socket.emit("setUsername", { username, color });
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
-
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
+  if (changeColorContainer) changeColorContainer.style.display = "flex";
 });
 
-// --- Auto-set username if saved ---
+// Auto-set username if saved
 if (username) {
   socket.emit("setUsername", { username, color: savedColor });
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
+  if (changeColorContainer) changeColorContainer.style.display = "flex";
 }
 
 // --- Send message ---
@@ -159,7 +156,7 @@ messageInput.addEventListener("keydown", (e) => {
   }
 });
 
-// --- Typing indicator ---
+// --- Typing ---
 let typingTimeout;
 messageInput.addEventListener("input", () => {
   if (!currentParty) return;
@@ -170,6 +167,7 @@ messageInput.addEventListener("input", () => {
   }, 1000);
 });
 
+// --- Typing indicator ---
 socket.on("typing", ({ username: tUser, isTyping, party }) => {
   const indicator = document.getElementById("typingIndicator");
   if (!indicator || party !== currentParty) return;
@@ -188,14 +186,12 @@ createPartyBtn.addEventListener("click", () => {
   if (!name) return alert("Party name required.");
   socket.emit("createParty", { name, password });
 });
-
 joinPartyBtn.addEventListener("click", () => {
   const name = (partyNameInput.value || "").trim();
   const password = (partyPasswordInput.value || "").trim();
   if (!name) return alert("Enter a party name to join.");
   socket.emit("joinParty", { name, password });
 });
-
 leavePartyBtn.addEventListener("click", () => {
   if (!currentParty) return alert("You’re not in a party!");
   socket.emit("leaveParty", { party: currentParty });
@@ -208,44 +204,87 @@ socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
   socket.emit("joinParty", { name: room, password: "" });
 });
-
 socket.on("partyJoined", (room) => {
   currentParty = room;
   systemLine(`Joined party: ${room}`);
 });
-
 socket.on("partyError", (msg) => alert(msg));
 
-// --- Chat messages with proper delete button ---
-function addMessage({ username: msgUser, message, color, id, image = null }) {
+// --- Custom delete confirmation ---
+function showDeleteConfirm(id) {
+  const overlay = document.createElement("div");
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100vw";
+  overlay.style.height = "100vh";
+  overlay.style.background = "rgba(0,0,0,0.45)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.zIndex = "9999";
+
+  const box = document.createElement("div");
+  box.style.background = "rgba(27,31,36,.95)";
+  box.style.padding = "24px";
+  box.style.borderRadius = "12px";
+  box.style.border = "1px solid rgba(255,255,255,.08)";
+  box.style.textAlign = "center";
+  box.style.maxWidth = "320px";
+  box.style.width = "90%";
+  box.style.color = "#e7edf3";
+  box.innerHTML = `<p style="margin-bottom:16px;">Are you sure you want to delete this message?</p>`;
+
+  const btnContainer = document.createElement("div");
+  btnContainer.style.display = "flex";
+  btnContainer.style.justifyContent = "space-around";
+  btnContainer.style.gap = "12px";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.style.flex = "1";
+  cancelBtn.style.padding = "8px 0";
+  cancelBtn.style.border = "none";
+  cancelBtn.style.borderRadius = "8px";
+  cancelBtn.style.cursor = "pointer";
+  cancelBtn.style.background = "#2a2f36";
+  cancelBtn.style.color = "#eee";
+  cancelBtn.onclick = () => overlay.remove();
+
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "Delete";
+  delBtn.style.flex = "1";
+  delBtn.style.padding = "8px 0";
+  delBtn.style.border = "none";
+  delBtn.style.borderRadius = "8px";
+  delBtn.style.cursor = "pointer";
+  delBtn.style.background = "#ff5555";
+  delBtn.style.color = "#fff";
+  delBtn.onclick = () => {
+    socket.emit("deleteMessage", { id });
+    overlay.remove();
+  };
+
+  btnContainer.appendChild(cancelBtn);
+  btnContainer.appendChild(delBtn);
+  box.appendChild(btnContainer);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+// --- Chat messages ---
+function appendMessage({ username: msgUser, message, color, id }) {
   playSound("rec.mp3");
   const div = document.createElement("div");
   div.classList.add("message");
   div.dataset.id = id;
-
-  if (image) {
-    const imgEl = document.createElement("img");
-    imgEl.src = image;
-    imgEl.style.maxWidth = "200px";
-    imgEl.style.borderRadius = "10px";
-    imgEl.style.marginTop = "6px";
-    imgEl.style.display = "block";
-    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>:`;
-    div.appendChild(imgEl);
-  } else {
-    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: ${escapeHtml(message)}`;
-  }
+  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: ${escapeHtml(message)}`;
 
   if (msgUser === username) {
     const delBtn = document.createElement("button");
-    delBtn.textContent = "✕";
-    delBtn.title = "Delete message";
+    delBtn.textContent = "🗑";
     delBtn.classList.add("delete-btn");
-    delBtn.onclick = () => {
-      if (confirm("Are you sure you want to delete this message?")) {
-        socket.emit("deleteMessage", { id });
-      }
-    };
+    delBtn.onclick = () => showDeleteConfirm(id);
     div.appendChild(delBtn);
   }
 
@@ -253,16 +292,37 @@ function addMessage({ username: msgUser, message, color, id, image = null }) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-socket.on("chatMessage", (data) => addMessage(data));
-socket.on("chatImage", (data) => addMessage({ ...data, image: data.image }));
+function appendImage({ username: imgUser, image, color, id }) {
+  playSound("rec.mp3");
+  const div = document.createElement("div");
+  div.classList.add("message");
+  div.dataset.id = id;
 
-// --- Delete message ---
-socket.on("deleteMessage", ({ id }) => {
-  const msg = chat.querySelector(`.message[data-id='${id}']`);
-  if (msg) msg.remove();
-});
+  const img = document.createElement("img");
+  img.src = image;
+  img.style.maxWidth = "200px";
+  img.style.borderRadius = "10px";
+  img.style.marginTop = "6px";
+  img.style.display = "block";
 
-// --- System and user updates ---
+  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(imgUser)}</strong>:`;
+  div.appendChild(img);
+
+  if (imgUser === username) {
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "🗑";
+    delBtn.classList.add("delete-btn");
+    delBtn.onclick = () => showDeleteConfirm(id);
+    div.appendChild(delBtn);
+  }
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// --- Socket events ---
+socket.on("chatMessage", appendMessage);
+socket.on("chatImage", appendImage);
 socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
@@ -299,28 +359,17 @@ function systemLine(text) {
 }
 
 function toast(msg) { systemLine(msg); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-
-// --- Name Color Button Logic ---
-const changeColorContainer = document.getElementById("changeColorContainer");
-const changeColorBtn = document.getElementById("changeColorBtn");
-const nameColorPicker = document.getElementById("nameColorPicker");
-
-// Toggle picker visibility
+// --- Name Color ---
 changeColorBtn.addEventListener("click", () => {
   nameColorPicker.style.display = nameColorPicker.style.display === "block" ? "none" : "block";
 });
-
-// Only send color after user finishes choosing
 let colorChangeTimer;
 nameColorPicker.addEventListener("input", (e) => {
   const newColor = e.target.value;
   savedColor = newColor;
   localStorage.setItem("chatColor", newColor);
-
   clearTimeout(colorChangeTimer);
   colorChangeTimer = setTimeout(() => {
     socket.emit("setUsername", { username, color: newColor });
