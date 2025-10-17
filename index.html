@@ -27,43 +27,26 @@
 
     <!-- CHAT + SIDEBAR -->
     <div id="chatContainer" class="card grid" style="display:none;">
-
-      <!-- LEFT CHAT -->
       <div class="left">
         <div id="chat" class="messages"></div>
 
-        <!-- Composer -->
+        <!-- composer -->
         <div class="composer">
           <input id="messageInput" type="text" placeholder="Type a message…"/>
           <button id="sendButton" type="button">Send</button>
           <div id="typingIndicator" class="system" style="display:none;">Someone is typing…</div>
         </div>
-      </div>
 
-      <!-- RIGHT SIDEBAR -->
-      <div class="right">
-        <!-- Online Users Box -->
-        <div class="sidebar-box">
-          <h3>Online Now</h3>
-          <ul id="onlineUsers" class="users"></ul>
-        </div>
-
-        <!-- Available Parties Box -->
-        <div class="sidebar-box">
-          <h3>Available Parties</h3>
-          <ul id="availableParties" class="users"></ul>
-        </div>
-
-        <!-- Party Controls Box -->
-        <div class="sidebar-box">
-          <h3>Party Controls</h3>
-          <div id="partyControls" class="party-controls">
+        <!-- PARTY CONTROLS -->
+        <div class="card" style="margin-top:10px;">
+          <h3 style="margin-bottom:8px;">Party Controls</h3>
+          <div class="party-controls">
             <label>Party Name:</label>
             <input type="text" id="partyNameInput" placeholder="e.g., Family, Friends, Study Group"/>
-            
+
             <label>Password:</label>
             <input type="text" id="partyPasswordInput" placeholder="leave empty for Public"/>
-            
+
             <div class="party-actions">
               <button id="createPartyBtn" type="button">Create Party</button>
               <button id="joinPartyBtn" type="button">Join Party</button>
@@ -71,8 +54,16 @@
             </div>
           </div>
         </div>
+
       </div>
 
+      <div class="right">
+        <h3>Online now</h3>
+        <ul id="userList" class="users"></ul>
+
+        <h3 style="margin-top:12px;">Available Parties</h3>
+        <div id="partiesList" class="users"></div>
+      </div>
     </div>
   </div>
 
