@@ -130,8 +130,6 @@ document.addEventListener("paste", (event) => {
 const sndSend = document.getElementById("sndSend");
 const sndRecv = document.getElementById("sndRecv");
 
-// Chrome often blocks audio until *any* media element plays successfully
-// So we'll unlock by using a silent <video> hack
 const unlockAudio = () => {
   const silent = document.createElement("video");
   silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA=="; // silent tiny mp4
@@ -154,32 +152,27 @@ usernameForm.addEventListener("submit", (e) => {
   const color = document.getElementById("usernameColor").value || "#ffd700";
   if (!name) return;
   username = name;
-  socket.emit("setUsername", { username, color }); // now sends color too
+  socket.emit("setUsername", { username, color }); 
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
 });
 
 // send message OR one pasted image
 sendButton.addEventListener("click", () => {
-  // if there's an image ready to send
   if (pastedImageData) {
-    // prevent double-sending
     if (sendButton.disabled) return;
     sendButton.disabled = true;
 
     socket.emit("sendImage", { image: pastedImageData, party: currentParty });
 
-    // reset
     const preview = document.getElementById("imagePreview");
     if (preview) preview.remove();
     pastedImageData = null;
 
-    // small delay to re-enable button
     setTimeout(() => (sendButton.disabled = false), 600);
     return;
   }
 
-  // otherwise, handle normal text message
   const text = (messageInput.value || "").trim();
   if (!text) return;
   if (!username) return alert("Set a username first!");
@@ -192,7 +185,7 @@ sendButton.addEventListener("click", () => {
 messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    sendButton.click(); // triggers the same send logic
+    sendButton.click();
   }
 });
 
@@ -210,11 +203,8 @@ messageInput.addEventListener("input", () => {
 messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-
-    // If there's an image in the clipboard, ignore this Enter press
-    if (e.ctrlKey || e.metaKey) return; // skip accidental paste combos
-    if (messageInput.value.trim() === "") return; // no text to send
-
+    if (e.ctrlKey || e.metaKey) return;
+    if (messageInput.value.trim() === "") return;
     sendButton.click();
   }
 });
@@ -257,11 +247,12 @@ leavePartyBtn.addEventListener("click", () => {
 // --- Auto-join after creating a party ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
-  currentParty = room;
-  systemLine(`Joined party: ${room}`);
+
+  // Fix: actually join the party so you can type
+  socket.emit("joinParty", { name: room, password: "" });
 });
 
-// --- Auto-join when joining a party ---
+// --- Join party handler ---
 socket.on("partyJoined", (room) => {
   currentParty = room;
   systemLine(`Joined party: ${room}`);
@@ -273,7 +264,6 @@ socket.on("partyError", (msg) => alert(msg));
 socket.on("chatMessage", ({ username, message, color }) => {
   playSound("rec.mp3");
 
-  // --- Show received images ---
   socket.on("chatImage", ({ username, image, color }) => {
     playSound("rec.mp3");
 
@@ -320,17 +310,14 @@ socket.on("updateParties", (list) => {
     const row = document.createElement("li");
     row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
     row.style.cursor = "pointer";
-
     row.onclick = () => {
-      if (p.isPrivate) {
-        partyNameInput.value = p.name;
-        partyPasswordInput.value = ""; // user fills if private
-      } else {
-        // auto join public party
+      partyNameInput.value = p.name;
+      partyPasswordInput.value = "";
+      if (!p.isPrivate) {
+        // auto-join public party
         socket.emit("joinParty", { name: p.name, password: "" });
       }
     };
-
     partiesList.appendChild(row);
   });
 });
@@ -345,7 +332,6 @@ function systemLine(text) {
 }
 
 function toast(msg) {
-  // simple inline toast via system line (keeps OG vibe)
   systemLine(msg);
 }
 
@@ -354,6 +340,5 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
-
 
 
