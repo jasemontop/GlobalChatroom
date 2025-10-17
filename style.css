@@ -161,9 +161,11 @@ h1 {
   border:1px solid rgba(255,255,255,.08);
   background:#13161a;
   color:var(--text);
+  font-size:1.2rem;  /* <- make text larger */
   outline:none;
   transition:.2s;
 }
+
 .composer input:focus {
   border-color:rgba(0,188,212,.5);
   box-shadow:0 0 0 4px rgba(0,188,212,.12);
