@@ -21,11 +21,6 @@ const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
 const leavePartyBtn = document.getElementById("leavePartyBtn");
 
-// --- New DOM elements for color button ---
-const changeColorContainer = document.getElementById("changeColorContainer");
-const changeColorBtn = document.getElementById("changeColorBtn");
-const nameColorPicker = document.getElementById("nameColorPicker");
-
 // --- Universal sound system ---
 const playSound = (file) => {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -144,8 +139,8 @@ usernameForm.addEventListener("submit", (e) => {
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
 
-  // Show change color button after username
-  changeColorContainer.style.display = "block";
+  // Show color button after login
+  document.getElementById("changeColorContainer").style.display = "flex";
 });
 
 // --- If username is saved, auto-set it ---
@@ -153,9 +148,8 @@ if (username) {
   socket.emit("setUsername", { username, color: savedColor });
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
-
-  // Show change color button
-  changeColorContainer.style.display = "block";
+  const btnContainer = document.getElementById("changeColorContainer");
+  if (btnContainer) btnContainer.style.display = "flex";
 }
 
 // --- Send message ---
@@ -198,15 +192,6 @@ messageInput.addEventListener("input", () => {
   typingTimeout = setTimeout(() => {
     socket.emit("typing", { party: currentParty, isTyping: false });
   }, 1000);
-});
-
-messageInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    if (e.ctrlKey || e.metaKey) return;
-    if (messageInput.value.trim() === "") return;
-    sendButton.click();
-  }
 });
 
 // --- Typing indicator ---
@@ -306,27 +291,10 @@ socket.on("updateParties", (list) => {
     row.onclick = () => {
       partyNameInput.value = p.name;
       partyPasswordInput.value = "";
-      if (!p.isPrivate) {
-        socket.emit("joinParty", { name: p.name, password: "" });
-      }
+      if (!p.isPrivate) socket.emit("joinParty", { name: p.name, password: "" });
     };
     partiesList.appendChild(row);
   });
-});
-
-// --- Name color change button ---
-changeColorBtn.addEventListener("click", () => {
-  nameColorPicker.click();
-});
-
-nameColorPicker.addEventListener("input", (e) => {
-  savedColor = e.target.value;
-  localStorage.setItem("chatColor", savedColor);
-
-  if (username) {
-    socket.emit("setUsername", { username, color: savedColor });
-    systemLine(`✅ Your name color was changed!`);
-  }
 });
 
 // --- Helpers ---
@@ -347,3 +315,29 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
+
+// === Name Color Button Logic ===
+const changeColorContainer = document.getElementById("changeColorContainer");
+const changeColorBtn = document.getElementById("changeColorBtn");
+const nameColorPicker = document.getElementById("nameColorPicker");
+const closeColorPicker = document.getElementById("closeColorPicker");
+
+let colorChangeTimeout;
+
+changeColorBtn.addEventListener("click", () => {
+  nameColorPicker.classList.toggle("visible");
+});
+
+closeColorPicker.addEventListener("click", () => {
+  nameColorPicker.classList.remove("visible");
+});
+
+// Only send color once after user finishes choosing
+nameColorPicker.addEventListener("change", (e) => {
+  const newColor = e.target.value;
+  savedColor = newColor;
+  localStorage.setItem("chatColor", newColor);
+
+  socket.emit("setUsername", { username, color: newColor });
+  systemLine(`✅ Name color changed!`);
+});
