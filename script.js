@@ -37,7 +37,7 @@ const partyNameInput = document.getElementById("partyNameInput");
 const partyPasswordInput = document.getElementById("partyPasswordInput");
 const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
-
+const leavePartyBtn = document.getElementById("leavePartyBtn");
 
 // --- Universal sound system (super clean trim + micro fade) ---
 const playSound = (file) => {
@@ -126,8 +126,6 @@ document.addEventListener("paste", (event) => {
   }
 });
 
-
-
 // --- Unlock Chrome audio (bulletproof for Chrome) ---
 const sndSend = document.getElementById("sndSend");
 const sndRecv = document.getElementById("sndRecv");
@@ -149,7 +147,6 @@ const unlockAudio = () => {
 };
 
 window.addEventListener("click", unlockAudio, { once: true });
-
 
 usernameForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -199,8 +196,6 @@ messageInput.addEventListener("keydown", (e) => {
   }
 });
 
-
-
 // --- Typing indicator ---
 let typingTimeout;
 messageInput.addEventListener("input", () => {
@@ -236,8 +231,7 @@ socket.on("typing", ({ username, isTyping, party }) => {
   }
 });
 
-
-// 3) Create / Join party
+// --- 3) Create / Join party ---
 createPartyBtn.addEventListener("click", () => {
   const name = (partyNameInput.value || "").trim();
   const password = (partyPasswordInput.value || "").trim();
@@ -253,7 +247,6 @@ joinPartyBtn.addEventListener("click", () => {
 });
 
 // Leave party
-const leavePartyBtn = document.getElementById("leavePartyBtn");
 leavePartyBtn.addEventListener("click", () => {
   if (!currentParty) return alert("You’re not in a party!");
   socket.emit("leaveParty", { party: currentParty });
@@ -261,10 +254,14 @@ leavePartyBtn.addEventListener("click", () => {
   currentParty = null;
 });
 
+// --- Auto-join after creating a party ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
+  currentParty = room;
+  systemLine(`Joined party: ${room}`);
 });
 
+// --- Auto-join when joining a party ---
 socket.on("partyJoined", (room) => {
   currentParty = room;
   systemLine(`Joined party: ${room}`);
@@ -277,28 +274,25 @@ socket.on("chatMessage", ({ username, message, color }) => {
   playSound("rec.mp3");
 
   // --- Show received images ---
-socket.on("chatImage", ({ username, image, color }) => {
+  socket.on("chatImage", ({ username, image, color }) => {
+    playSound("rec.mp3");
 
-  playSound("rec.mp3");
+    const div = document.createElement("div");
+    div.classList.add("message");
 
-  const div = document.createElement("div");
-  div.classList.add("message");
+    const img = document.createElement("img");
+    img.src = image;
+    img.style.maxWidth = "200px";
+    img.style.borderRadius = "10px";
+    img.style.marginTop = "6px";
+    img.style.display = "block";
 
-  const img = document.createElement("img");
-  img.src = image;
-  img.style.maxWidth = "200px";
-  img.style.borderRadius = "10px";
-  img.style.marginTop = "6px";
-  img.style.display = "block";
+    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:` ;
+    div.appendChild(img);
 
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:`;
-  div.appendChild(img);
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-});
-
-
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  });
 
   const div = document.createElement("div");
   div.classList.add("message");
@@ -306,8 +300,6 @@ socket.on("chatImage", ({ username, image, color }) => {
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 });
-
-
 
 socket.on("systemMessage", (text) => {
   systemLine(text);
@@ -327,12 +319,18 @@ socket.on("updateParties", (list) => {
   list.forEach((p) => {
     const row = document.createElement("li");
     row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
-    // quick-join on click
     row.style.cursor = "pointer";
+
     row.onclick = () => {
-      partyNameInput.value = p.name;
-      partyPasswordInput.value = ""; // user fills if private
+      if (p.isPrivate) {
+        partyNameInput.value = p.name;
+        partyPasswordInput.value = ""; // user fills if private
+      } else {
+        // auto join public party
+        socket.emit("joinParty", { name: p.name, password: "" });
+      }
     };
+
     partiesList.appendChild(row);
   });
 });
@@ -356,5 +354,6 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
+
 
 
