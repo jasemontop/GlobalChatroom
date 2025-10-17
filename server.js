@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -9,10 +10,10 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname)));
 
-const users = {}; // socket.id -> {name,color}
-const parties = {}; // roomName -> { password?: string, sockets:Set<string>, messages: Array<{id, username, text, image?, color}> }
+const users = {}; // socket.id -> {name, color}
+const parties = {}; // roomName -> { password?: string, sockets:Set<string> }
+let msgCounter = 0; // simple incremental message ID
 
-// --- Helper to send party list ---
 function sendPartyList() {
   const list = Object.entries(parties).map(([name, r]) => ({
     name,
@@ -22,10 +23,8 @@ function sendPartyList() {
   io.emit("updateParties", list);
 }
 
-// Generate unique message IDs
-const generateId = () => Math.random().toString(36).substring(2, 10);
-
 io.on("connection", (socket) => {
+
   // === Set username ===
   socket.on("setUsername", ({ username, color }) => {
     const clean = (username || "").trim();
@@ -42,7 +41,7 @@ io.on("connection", (socket) => {
     const room = (name || "").trim();
     if (!room) return socket.emit("partyError", "Party name required.");
     if (parties[room]) return socket.emit("partyError", "Party already exists.");
-    parties[room] = { password: (password || "").trim() || null, sockets: new Set(), messages: [] };
+    parties[room] = { password: (password || "").trim() || null, sockets: new Set() };
     sendPartyList();
     socket.emit("partyCreated", room);
   });
@@ -54,7 +53,6 @@ io.on("connection", (socket) => {
     const needs = parties[room].password;
     if (needs && needs !== (password || "")) return socket.emit("partyError", "Wrong password.");
 
-    // Leave other rooms
     for (const r of socket.rooms) {
       if (r !== socket.id) {
         socket.leave(r);
@@ -67,13 +65,6 @@ io.on("connection", (socket) => {
 
     const user = users[socket.id];
     const uname = user?.name || "Anonymous";
-
-    // Send previous messages to newly joined user
-    parties[room].messages.forEach(msg => {
-      if (msg.text) socket.emit("chatMessage", msg);
-      if (msg.image) socket.emit("chatImage", msg);
-    });
-
     io.to(room).emit("systemMessage", `🟢 ${uname} joined ${room}`);
     socket.emit("partyJoined", room);
     sendPartyList();
@@ -99,45 +90,36 @@ io.on("connection", (socket) => {
     const user = users[socket.id];
     const uname = user?.name || "Anonymous";
     const color = user?.color || "#ffd700";
-
-    const msgObj = { id: generateId(), username: uname, message: text, color };
+    const id = ++msgCounter;
 
     if (party && parties[party]) {
-      parties[party].messages.push(msgObj);
-      io.to(party).emit("chatMessage", msgObj);
+      io.to(party).emit("chatMessage", { id, username: uname, message: text, color, senderId: socket.id });
     } else {
       socket.emit("systemMessage", "Join a party to chat with others!");
     }
   });
 
-  // === Send image ===
   socket.on("sendImage", ({ image, party }) => {
     const user = users[socket.id];
     const uname = user?.name || "Anonymous";
     const color = user?.color || "#ffd700";
-
-    const imgObj = { id: generateId(), username: uname, image, color };
+    const id = ++msgCounter;
 
     if (party && parties[party]) {
-      parties[party].messages.push(imgObj);
-      io.to(party).emit("chatImage", imgObj);
+      io.to(party).emit("chatImage", { id, username: uname, image, color, senderId: socket.id });
     } else {
-      socket.emit("systemMessage", "Join a party to send images!");
+      socket.emit("systemMessage", "Join a party to chat with others!");
     }
   });
 
-  // === Delete message (only own) ===
-  socket.on("deleteMessage", ({ party, id }) => {
-    if (!party || !parties[party]) return;
-    const user = users[socket.id];
-    const uname = user?.name || "Anonymous";
-
-    // Find message and check ownership
-    const idx = parties[party].messages.findIndex(m => m.id === id && m.username === uname);
-    if (idx !== -1) {
-      parties[party].messages.splice(idx, 1);
-      io.to(party).emit("deleteMessage", { id });
+  // === Delete message ===
+  socket.on("deleteMessage", ({ id }) => {
+    for (const room of socket.rooms) {
+      if (room !== socket.id && parties[room]) {
+        io.to(room).emit("deleteMessage", { id });
+      }
     }
+    socket.emit("deleteMessage", { id });
   });
 
   // --- Typing indicator ---
