@@ -19,7 +19,6 @@
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
 
-    <!-- CHANGE NAME COLOR -->
     <div id="changeColorContainer" style="display:none; margin:10px 0;">
       <button id="changeColorBtn" type="button">Change Name Color</button>
       <input type="color" id="nameColorPicker" style="display:none;" />
@@ -43,8 +42,6 @@
       <!-- RIGHT SIDEBAR -->
       <div class="right">
         <div class="sidebar-box">
-          
-          <!-- Party Controls -->
           <h3>Party Controls</h3>
           <div class="party-controls">
             <label>Party Name:</label>
@@ -58,14 +55,11 @@
             </div>
           </div>
 
-          <!-- Online Members -->
           <h3>Online Now</h3>
           <ul id="onlineUsers" class="users"></ul>
 
-          <!-- Available Parties -->
           <h3>Available Parties</h3>
           <ul id="availableParties" class="users"></ul>
-
         </div>
       </div>
 
@@ -79,7 +73,6 @@
     const send = document.getElementById('sendButton');
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
   </script>
-
   <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
 </body>
 </html>
