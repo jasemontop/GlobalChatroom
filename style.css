@@ -417,34 +417,3 @@ audio { display: none; } /* hide players */
 #nameColorPicker.visible + #closeColorPicker {
   display: inline-block;
 }
-
-/* ===== ADJUST CHAT AND SIDEBAR POSITION ===== */
-.grid {
-  grid-template-columns: 1fr 220px; /* Make chat bigger, sidebar narrower */
-  gap: 16px;
-}
-
-.left {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Make messages (chat box) slightly taller and wider */
-.messages {
-  height: 480px;  /* was 420px */
-  min-width: 100%; /* ensures chat fills its column */
-}
-
-/* Sidebar adjustments */
-.right {
-  max-height: 480px; /* match chat height */
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-/* Optional: ensure online users and parties list use full width */
-.users {
-  max-height: 220px; /* split sidebar for users and parties */
-  overflow-y: auto;
-}
