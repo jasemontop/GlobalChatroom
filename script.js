@@ -324,27 +324,3 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
-
-// --- Color change button ---
-const changeColorBtn = document.getElementById("changeColorBtn");
-const nameColorPicker = document.getElementById("nameColorPicker");
-
-changeColorBtn.addEventListener("click", () => {
-  // Trigger hidden color input
-  nameColorPicker.click();
-});
-
-nameColorPicker.addEventListener("input", (e) => {
-  const newColor = e.target.value;
-  savedColor = newColor;
-
-  // Save in localStorage
-  localStorage.setItem("chatColor", savedColor);
-
-  // Update username color on server
-  if (username) {
-    socket.emit("setUsername", { username, color: savedColor });
-    systemLine(`Your name color changed!`);
-  }
-});
-
