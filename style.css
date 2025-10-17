@@ -313,19 +313,3 @@ audio { display: none; } /* hide players */
 .messages img:hover {
   transform: scale(1.05);
 }
-
-#changeColorBtn {
-  display: inline-block; /* ensure visible */
-  background: #2a2f36;
-  color: #ffd700;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 10px;
-  cursor: pointer;
-  margin-left: 10px;
-  font-size: 14px;
-}
-
-#changeColorBtn:hover {
-  background: #3b424c;
-}
