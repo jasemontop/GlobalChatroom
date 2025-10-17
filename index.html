@@ -10,7 +10,7 @@
   <div id="chat-container">
     <h1>🌍 Global Chatroom</h1>
 
-    <!-- USERNAME FORM -->
+    <!-- USERNAME -->
     <form id="usernameForm" class="card">
       <h2>Join the party</h2>
       <input type="text" id="usernameInput" placeholder="Pick a username…" required />
@@ -19,6 +19,7 @@
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
 
+    <!-- CHANGE NAME COLOR BUTTON (HIDDEN UNTIL USER SETS NAME) -->
     <div id="changeColorContainer" style="display:none; margin:10px 0;">
       <button id="changeColorBtn" type="button">Change Name Color</button>
       <input type="color" id="nameColorPicker" style="display:none;" />
@@ -26,53 +27,59 @@
 
     <!-- CHAT + SIDEBAR -->
     <div id="chatContainer" class="card grid" style="display:none;">
-
-      <!-- CHAT AREA -->
       <div class="left">
         <div id="chat" class="messages"></div>
 
-        <!-- Composer -->
+        <!-- composer -->
         <div class="composer">
           <input id="messageInput" type="text" placeholder="Type a message…"/>
           <button id="sendButton" type="button">Send</button>
           <div id="typingIndicator" class="system" style="display:none;">Someone is typing…</div>
         </div>
-      </div>
 
-      <!-- RIGHT SIDEBAR -->
-      <div class="right">
-        <div class="sidebar-box">
-          <h3>Party Controls</h3>
+        <!-- PARTY CONTROLS -->
+        <div class="card" style="margin-top:10px;">
+          <h3 style="margin-bottom:8px;">Party Controls</h3>
           <div class="party-controls">
             <label>Party Name:</label>
             <input type="text" id="partyNameInput" placeholder="e.g., Family, Friends, Study Group"/>
+
             <label>Password:</label>
             <input type="text" id="partyPasswordInput" placeholder="leave empty for Public"/>
+
             <div class="party-actions">
               <button id="createPartyBtn" type="button">Create Party</button>
               <button id="joinPartyBtn" type="button">Join Party</button>
               <button id="leavePartyBtn" type="button">Leave Party</button>
             </div>
           </div>
-
-          <h3>Online Now</h3>
-          <ul id="onlineUsers" class="users"></ul>
-
-          <h3>Available Parties</h3>
-          <ul id="availableParties" class="users"></ul>
         </div>
+
       </div>
 
+      <div class="right">
+        <h3>Online now</h3>
+        <ul id="userList" class="users"></ul>
+
+        <h3 style="margin-top:12px;">Available Parties</h3>
+        <div id="partiesList" class="users"></div>
+      </div>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
   <script>
+    // Enter key sends message
     const input = document.getElementById('messageInput');
     const send = document.getElementById('sendButton');
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
   </script>
+
+  <!-- Chat sounds -->
+
+  <!-- Silent unlock video -->
   <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
+
 </body>
 </html>
