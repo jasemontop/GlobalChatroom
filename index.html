@@ -19,6 +19,12 @@
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
 
+    <!-- CHANGE NAME COLOR BUTTON (HIDDEN UNTIL USER SETS NAME) -->
+    <div id="changeColorContainer" style="display:none; margin:10px 0;">
+      <button id="changeColorBtn" type="button">Change Name Color</button>
+      <input type="color" id="nameColorPicker" style="display:none;" />
+    </div>
+
     <!-- CHAT + SIDEBAR -->
     <div id="chatContainer" class="card grid" style="display:none;">
       <div class="left">
@@ -70,11 +76,10 @@
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
   </script>
 
-<!-- Chat sounds -->
+  <!-- Chat sounds -->
 
-
-<!-- Silent unlock video -->
-<video id="unlockVideo" playsinline muted loop style="display:none;"></video>
+  <!-- Silent unlock video -->
+  <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
 
 </body>
 </html>
