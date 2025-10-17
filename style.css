@@ -25,13 +25,13 @@ body {
   overflow:hidden;
 }
 
-/* ===== SHELL ===== */
 #chat-container {
-  width: 960px; max-width: 96vw;
+  width: 1080px;       /* bigger */
+  max-width: 98vw;     /* responsive */
   background: rgba(27,31,36,.72);
   border: 1px solid rgba(255,255,255,.06);
   border-radius: 20px;
-  padding: 24px;
+  padding: 32px;       /* more padding */
   backdrop-filter: blur(10px);
   box-shadow:
     0 0 0 1px rgba(255,255,255,.02) inset,
@@ -39,6 +39,7 @@ body {
     0 0 40px rgba(0, 255, 170, .15);
   animation: shellIn .7s ease both;
 }
+
 @keyframes shellIn { from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;} }
 
 h1 {
