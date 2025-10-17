@@ -44,7 +44,7 @@ const playSound = (file) => {
     .catch(err => console.warn("Sound error:", err));
 };
 
-// --- Paste image handling ---
+// --- Paste image but send only on Enter/Send ---
 let pastedImageData = null;
 document.addEventListener("paste", (event) => {
   const items = event.clipboardData?.items;
@@ -63,10 +63,12 @@ document.addEventListener("paste", (event) => {
           preview.style.alignItems = "center";
           preview.style.gap = "8px";
           preview.style.margin = "6px 0";
+
           const img = document.createElement("img");
           img.style.maxWidth = "120px";
           img.style.borderRadius = "8px";
           img.alt = "Pasted preview";
+
           const cancel = document.createElement("button");
           cancel.textContent = "✕";
           cancel.title = "Remove image";
@@ -75,8 +77,9 @@ document.addEventListener("paste", (event) => {
           cancel.style.borderRadius = "8px";
           cancel.style.cursor = "pointer";
           cancel.style.background = "#2a2f36";
-          cancel.style.color = "#fff";
+          cancel.style.color = "#eee";
           cancel.onclick = () => { preview.remove(); pastedImageData = null; };
+
           preview.appendChild(img);
           preview.appendChild(cancel);
           messageInput.parentNode.insertBefore(preview, messageInput);
@@ -90,12 +93,15 @@ document.addEventListener("paste", (event) => {
 });
 
 // --- Unlock Chrome audio ---
+const sndSend = document.getElementById("sndSend");
+const sndRecv = document.getElementById("sndRecv");
 const unlockAudio = () => {
   const silent = document.createElement("video");
   silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA==";
   silent.muted = true;
   silent.play().catch(()=>{});
   setTimeout(() => silent.remove(), 2000);
+  [sndSend, sndRecv].forEach(snd => { if (!snd) return; playSound("rec.mp3"); });
 };
 window.addEventListener("click", unlockAudio, { once: true });
 
@@ -129,10 +135,13 @@ if (username) {
 // --- Send message ---
 sendButton.addEventListener("click", () => {
   if (pastedImageData) {
+    if (sendButton.disabled) return;
+    sendButton.disabled = true;
     socket.emit("sendImage", { image: pastedImageData, party: currentParty });
     const preview = document.getElementById("imagePreview");
     if (preview) preview.remove();
     pastedImageData = null;
+    setTimeout(() => (sendButton.disabled = false), 600);
     return;
   }
   const text = (messageInput.value || "").trim();
@@ -161,11 +170,15 @@ messageInput.addEventListener("input", () => {
   }, 1000);
 });
 
-socket.on("typing", ({ username: typUser, isTyping, party }) => {
+socket.on("typing", ({ username: tUser, isTyping, party }) => {
   const indicator = document.getElementById("typingIndicator");
   if (!indicator || party !== currentParty) return;
-  indicator.style.display = isTyping ? "block" : "none";
-  indicator.textContent = isTyping ? `${typUser} is typing…` : "";
+  if (isTyping) {
+    indicator.style.display = "block";
+    indicator.textContent = `${tUser} is typing…`;
+  } else {
+    indicator.style.display = "none";
+  }
 });
 
 // --- Party buttons ---
@@ -204,35 +217,30 @@ socket.on("partyJoined", (room) => {
 socket.on("partyError", (msg) => alert(msg));
 
 // --- Chat messages with proper delete button ---
-function createMessageElement({ id, username: msgUser, message, color, image }) {
+function addMessage({ username: msgUser, message, color, id, image = null }) {
+  playSound("rec.mp3");
   const div = document.createElement("div");
   div.classList.add("message");
   div.dataset.id = id;
 
   if (image) {
-    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: `;
-    const img = document.createElement("img");
-    img.src = image;
-    img.style.maxWidth = "200px";
-    img.style.borderRadius = "10px";
-    img.style.display = "block";
-    img.style.marginTop = "6px";
-    div.appendChild(img);
+    const imgEl = document.createElement("img");
+    imgEl.src = image;
+    imgEl.style.maxWidth = "200px";
+    imgEl.style.borderRadius = "10px";
+    imgEl.style.marginTop = "6px";
+    imgEl.style.display = "block";
+    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>:`;
+    div.appendChild(imgEl);
   } else {
     div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: ${escapeHtml(message)}`;
   }
 
-  // Delete button only for own messages
   if (msgUser === username) {
     const delBtn = document.createElement("button");
     delBtn.textContent = "✕";
     delBtn.title = "Delete message";
-    delBtn.style.float = "right";
-    delBtn.style.border = "none";
-    delBtn.style.background = "transparent";
-    delBtn.style.color = "#fff";
-    delBtn.style.cursor = "pointer";
-    delBtn.style.fontWeight = "bold";
+    delBtn.classList.add("delete-btn");
     delBtn.onclick = () => {
       if (confirm("Are you sure you want to delete this message?")) {
         socket.emit("deleteMessage", { id });
@@ -243,31 +251,23 @@ function createMessageElement({ id, username: msgUser, message, color, image }) 
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
-  return div;
 }
 
-socket.on("chatMessage", (data) => {
-  playSound("rec.mp3");
-  createMessageElement(data);
-});
+socket.on("chatMessage", (data) => addMessage(data));
+socket.on("chatImage", (data) => addMessage({ ...data, image: data.image }));
 
-socket.on("chatImage", (data) => {
-  playSound("rec.mp3");
-  createMessageElement({ ...data, image: data.image });
-});
-
-// --- Delete message from DOM ---
+// --- Delete message ---
 socket.on("deleteMessage", ({ id }) => {
-  const msg = chat.querySelector(`div.message[data-id="${id}"]`);
+  const msg = chat.querySelector(`.message[data-id='${id}']`);
   if (msg) msg.remove();
 });
 
-// --- System & User Updates ---
+// --- System and user updates ---
 socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
   userList.innerHTML = "";
-  users.forEach(u => {
+  users.forEach((u) => {
     const li = document.createElement("li");
     li.textContent = u;
     userList.appendChild(li);
@@ -276,7 +276,7 @@ socket.on("updateUsers", (users) => {
 
 socket.on("updateParties", (list) => {
   partiesList.innerHTML = "";
-  list.forEach(p => {
+  list.forEach((p) => {
     const row = document.createElement("li");
     row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
     row.style.cursor = "pointer";
@@ -304,15 +304,17 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-// === Name Color Logic ===
+// --- Name Color Button Logic ---
 const changeColorContainer = document.getElementById("changeColorContainer");
 const changeColorBtn = document.getElementById("changeColorBtn");
 const nameColorPicker = document.getElementById("nameColorPicker");
 
+// Toggle picker visibility
 changeColorBtn.addEventListener("click", () => {
   nameColorPicker.style.display = nameColorPicker.style.display === "block" ? "none" : "block";
 });
 
+// Only send color after user finishes choosing
 let colorChangeTimer;
 nameColorPicker.addEventListener("input", (e) => {
   const newColor = e.target.value;
