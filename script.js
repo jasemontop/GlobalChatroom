@@ -49,7 +49,6 @@ const playSound = (file) => {
 
 // --- Paste image but send only on Enter/Send ---
 let pastedImageData = null;
-
 document.addEventListener("paste", (event) => {
   const items = event.clipboardData?.items;
   if (!items) return;
@@ -130,7 +129,6 @@ usernameForm.addEventListener("submit", (e) => {
   username = name;
   savedColor = color;
 
-  // Save in localStorage
   localStorage.setItem("chatUsername", username);
   localStorage.setItem("chatColor", color);
 
@@ -139,11 +137,10 @@ usernameForm.addEventListener("submit", (e) => {
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
 
-  // Show color button after login
   document.getElementById("changeColorContainer").style.display = "flex";
 });
 
-// --- If username is saved, auto-set it ---
+// --- Auto login ---
 if (username) {
   socket.emit("setUsername", { username, color: savedColor });
   usernameForm.style.display = "none";
@@ -194,19 +191,14 @@ messageInput.addEventListener("input", () => {
   }, 1000);
 });
 
-// --- Typing indicator ---
 socket.on("typing", ({ username, isTyping, party }) => {
   const indicator = document.getElementById("typingIndicator");
   if (!indicator || party !== currentParty) return;
-  if (isTyping) {
-    indicator.style.display = "block";
-    indicator.textContent = `${username} is typing…`;
-  } else {
-    indicator.style.display = "none";
-  }
+  indicator.style.display = isTyping ? "block" : "none";
+  if (isTyping) indicator.textContent = `${username} is typing…`;
 });
 
-// --- Party buttons ---
+// --- Party system ---
 createPartyBtn.addEventListener("click", () => {
   const name = (partyNameInput.value || "").trim();
   const password = (partyPasswordInput.value || "").trim();
@@ -228,7 +220,6 @@ leavePartyBtn.addEventListener("click", () => {
   currentParty = null;
 });
 
-// --- Auto-join after creating a party ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
   socket.emit("joinParty", { name: room, password: "" });
@@ -255,22 +246,18 @@ socket.on("chatImage", ({ username, image, color }) => {
   playSound("rec.mp3");
   const div = document.createElement("div");
   div.classList.add("message");
-
   const img = document.createElement("img");
   img.src = image;
   img.style.maxWidth = "200px";
   img.style.borderRadius = "10px";
   img.style.marginTop = "6px";
   img.style.display = "block";
-
   div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:`;
   div.appendChild(img);
-
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 });
 
-// --- System and user updates ---
 socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
@@ -290,7 +277,6 @@ socket.on("updateParties", (list) => {
     row.style.cursor = "pointer";
     row.onclick = () => {
       partyNameInput.value = p.name;
-      partyPasswordInput.value = "";
       if (!p.isPrivate) socket.emit("joinParty", { name: p.name, password: "" });
     };
     partiesList.appendChild(row);
@@ -316,28 +302,30 @@ function escapeHtml(s) {
   }[c]));
 }
 
-// === Name Color Button Logic ===
+// === Fixed Name Color Button Logic ===
 const changeColorContainer = document.getElementById("changeColorContainer");
 const changeColorBtn = document.getElementById("changeColorBtn");
 const nameColorPicker = document.getElementById("nameColorPicker");
 const closeColorPicker = document.getElementById("closeColorPicker");
 
-let colorChangeTimeout;
+if (changeColorBtn && nameColorPicker && closeColorPicker) {
+  changeColorBtn.addEventListener("click", () => {
+    nameColorPicker.classList.toggle("visible");
+  });
 
-changeColorBtn.addEventListener("click", () => {
-  nameColorPicker.classList.toggle("visible");
-});
+  closeColorPicker.addEventListener("click", () => {
+    nameColorPicker.classList.remove("visible");
+  });
 
-closeColorPicker.addEventListener("click", () => {
-  nameColorPicker.classList.remove("visible");
-});
-
-// Only send color once after user finishes choosing
-nameColorPicker.addEventListener("change", (e) => {
-  const newColor = e.target.value;
-  savedColor = newColor;
-  localStorage.setItem("chatColor", newColor);
-
-  socket.emit("setUsername", { username, color: newColor });
-  systemLine(`✅ Name color changed!`);
-});
+  let colorChangeTimeout;
+  nameColorPicker.addEventListener("input", (e) => {
+    clearTimeout(colorChangeTimeout);
+    colorChangeTimeout = setTimeout(() => {
+      const newColor = e.target.value;
+      savedColor = newColor;
+      localStorage.setItem("chatColor", newColor);
+      socket.emit("setUsername", { username, color: newColor });
+      systemLine(`✅ Name color changed!`);
+    }, 500); // waits 0.5s before applying color to prevent spam
+  });
+}
