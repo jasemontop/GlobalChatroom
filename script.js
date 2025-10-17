@@ -39,7 +39,7 @@ const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
 const leavePartyBtn = document.getElementById("leavePartyBtn");
 
-// --- Universal sound system (super clean trim + micro fade) ---
+// --- Universal sound system ---
 const playSound = (file) => {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   fetch(file)
@@ -120,7 +120,7 @@ document.addEventListener("paste", (event) => {
   }
 });
 
-// --- Unlock Chrome audio (bulletproof for Chrome) ---
+// --- Unlock Chrome audio ---
 const sndSend = document.getElementById("sndSend");
 const sndRecv = document.getElementById("sndRecv");
 
@@ -233,13 +233,12 @@ leavePartyBtn.addEventListener("click", () => {
   currentParty = null;
 });
 
-// --- Auto-join fixes ---
+// --- Auto-join after creating a party ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
 
-  // Fix: directly set currentParty without emitting joinParty
-  currentParty = room;
-  systemLine(`Joined party: ${room}`);
+  // ✅ Auto-join the party on server
+  socket.emit("joinParty", { name: room, password: "" });
 });
 
 socket.on("partyJoined", (room) => {
@@ -298,6 +297,7 @@ socket.on("updateParties", (list) => {
       partyNameInput.value = p.name;
       partyPasswordInput.value = "";
       if (!p.isPrivate) {
+        // ✅ Auto-join public party
         socket.emit("joinParty", { name: p.name, password: "" });
       }
     };
