@@ -19,31 +19,32 @@
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
 
-    <!-- CHAT GRID -->
+    <!-- CHANGE NAME COLOR BUTTON -->
+    <div id="changeColorContainer">
+      <button id="changeColorBtn" type="button">Change Name Color</button>
+      <input type="color" id="nameColorPicker" />
+      <button id="closeColorPicker">✕</button>
+    </div>
+
+    <!-- CHAT + SIDEBAR GRID -->
     <div id="chatContainer" class="card grid" style="display:none;">
-      <!-- LEFT CHAT -->
+      
+      <!-- LEFT CHAT COLUMN -->
       <div class="left">
         <div id="chat" class="messages"></div>
 
-        <!-- composer -->
+        <!-- Composer -->
         <div class="composer">
           <input id="messageInput" type="text" placeholder="Type a message…"/>
           <button id="sendButton" type="button">Send</button>
           <div id="typingIndicator" class="system" style="display:none;">Someone is typing…</div>
         </div>
-
-        <!-- Change Name Color Button -->
-        <div id="changeColorContainer">
-          <button id="changeColorBtn">🎨 Change Name Color</button>
-          <input type="color" id="nameColorPicker" />
-          <button id="closeColorPicker">✕</button>
-        </div>
       </div>
 
-      <!-- RIGHT SIDEBAR -->
+      <!-- RIGHT SIDEBAR COLUMN -->
       <div class="right">
         <!-- Party Controls -->
-        <div class="party-controls-card">
+        <div class="card party-controls-card">
           <h3>Party Controls</h3>
           <div class="party-controls">
             <label>Party Name:</label>
@@ -58,15 +59,19 @@
           </div>
         </div>
 
-        <!-- Online Users & Available Parties -->
+        <!-- Online Users -->
         <div class="users-container">
-          <h3>Online Now</h3>
+          <h3>Online now</h3>
           <ul id="userList" class="users"></ul>
+        </div>
 
+        <!-- Available Parties -->
+        <div class="users-container">
           <h3>Available Parties</h3>
-          <ul id="partiesList" class="users"></ul>
+          <div id="partiesList" class="users"></div>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -76,14 +81,12 @@
     // Enter key sends message
     const input = document.getElementById('messageInput');
     const send = document.getElementById('sendButton');
-    input.addEventListener('keydown', (e) => { 
-      if (e.key === 'Enter') { 
-        e.preventDefault(); 
-        send.click(); 
-      }
-    });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
   </script>
 
+  <!-- Chat sounds & silent unlock video -->
+  <audio id="sendSound"></audio>
   <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
+
 </body>
 </html>
