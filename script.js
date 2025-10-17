@@ -52,14 +52,11 @@ const playSound = (file) => {
       src.connect(gain);
       gain.connect(ctx.destination);
 
-      // volume
       gain.gain.value = 0.40;
 
-      // play 70% of file to cut off tail noise
       const duration = audioBuf.duration * 0.35;
       const endTime = ctx.currentTime + duration;
 
-      // quick fade-out (30ms)
       gain.gain.setValueAtTime(0.35, endTime - 0.03);
       gain.gain.linearRampToValueAtTime(0, endTime);
 
@@ -83,7 +80,6 @@ document.addEventListener("paste", (event) => {
       reader.onload = (e) => {
         pastedImageData = e.target.result;
 
-        // show a small preview above the message input
         let preview = document.getElementById("imagePreview");
         if (!preview) {
           preview = document.createElement("div");
@@ -113,11 +109,9 @@ document.addEventListener("paste", (event) => {
           preview.appendChild(img);
           preview.appendChild(cancel);
 
-          // insert preview just above the message input
           messageInput.parentNode.insertBefore(preview, messageInput);
         }
 
-        // update the img src
         preview.querySelector("img").src = pastedImageData;
       };
       reader.readAsDataURL(file);
@@ -132,7 +126,7 @@ const sndRecv = document.getElementById("sndRecv");
 
 const unlockAudio = () => {
   const silent = document.createElement("video");
-  silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA=="; // silent tiny mp4
+  silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA==";
   silent.muted = true;
   silent.play().catch(()=>{});
   setTimeout(() => silent.remove(), 2000);
@@ -157,7 +151,6 @@ usernameForm.addEventListener("submit", (e) => {
   chatContainer.style.display = "block";
 });
 
-// send message OR one pasted image
 sendButton.addEventListener("click", () => {
   if (pastedImageData) {
     if (sendButton.disabled) return;
@@ -189,7 +182,6 @@ messageInput.addEventListener("keydown", (e) => {
   }
 });
 
-// --- Typing indicator ---
 let typingTimeout;
 messageInput.addEventListener("input", () => {
   if (!currentParty) return;
@@ -209,7 +201,6 @@ messageInput.addEventListener("keydown", (e) => {
   }
 });
 
-// show/hide typing text when others type
 socket.on("typing", ({ username, isTyping, party }) => {
   const indicator = document.getElementById("typingIndicator");
   if (!indicator || party !== currentParty) return;
@@ -221,7 +212,6 @@ socket.on("typing", ({ username, isTyping, party }) => {
   }
 });
 
-// --- 3) Create / Join party ---
 createPartyBtn.addEventListener("click", () => {
   const name = (partyNameInput.value || "").trim();
   const password = (partyPasswordInput.value || "").trim();
@@ -236,7 +226,6 @@ joinPartyBtn.addEventListener("click", () => {
   socket.emit("joinParty", { name, password });
 });
 
-// Leave party
 leavePartyBtn.addEventListener("click", () => {
   if (!currentParty) return alert("You’re not in a party!");
   socket.emit("leaveParty", { party: currentParty });
@@ -244,15 +233,15 @@ leavePartyBtn.addEventListener("click", () => {
   currentParty = null;
 });
 
-// --- Auto-join after creating a party ---
+// --- Auto-join fixes ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
 
-  // Fix: actually join the party so you can type
-  socket.emit("joinParty", { name: room, password: "" });
+  // Fix: directly set currentParty without emitting joinParty
+  currentParty = room;
+  systemLine(`Joined party: ${room}`);
 });
 
-// --- Join party handler ---
 socket.on("partyJoined", (room) => {
   currentParty = room;
   systemLine(`Joined party: ${room}`);
@@ -260,30 +249,8 @@ socket.on("partyJoined", (room) => {
 
 socket.on("partyError", (msg) => alert(msg));
 
-// 4) Incoming messages
 socket.on("chatMessage", ({ username, message, color }) => {
   playSound("rec.mp3");
-
-  socket.on("chatImage", ({ username, image, color }) => {
-    playSound("rec.mp3");
-
-    const div = document.createElement("div");
-    div.classList.add("message");
-
-    const img = document.createElement("img");
-    img.src = image;
-    img.style.maxWidth = "200px";
-    img.style.borderRadius = "10px";
-    img.style.marginTop = "6px";
-    img.style.display = "block";
-
-    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:` ;
-    div.appendChild(img);
-
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  });
-
   const div = document.createElement("div");
   div.classList.add("message");
   div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>: ${escapeHtml(message)}`;
@@ -291,9 +258,26 @@ socket.on("chatMessage", ({ username, message, color }) => {
   chat.scrollTop = chat.scrollHeight;
 });
 
-socket.on("systemMessage", (text) => {
-  systemLine(text);
+socket.on("chatImage", ({ username, image, color }) => {
+  playSound("rec.mp3");
+  const div = document.createElement("div");
+  div.classList.add("message");
+
+  const img = document.createElement("img");
+  img.src = image;
+  img.style.maxWidth = "200px";
+  img.style.borderRadius = "10px";
+  img.style.marginTop = "6px";
+  img.style.display = "block";
+
+  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:`;
+  div.appendChild(img);
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 });
+
+socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
   userList.innerHTML = "";
@@ -314,7 +298,6 @@ socket.on("updateParties", (list) => {
       partyNameInput.value = p.name;
       partyPasswordInput.value = "";
       if (!p.isPrivate) {
-        // auto-join public party
         socket.emit("joinParty", { name: p.name, password: "" });
       }
     };
@@ -340,5 +323,4 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
-
 
