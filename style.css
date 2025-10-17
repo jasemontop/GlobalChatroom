@@ -106,30 +106,24 @@ h1 {
   text-align:center;
 }
 
-/* ===== GRID (Adjusted for larger chat + sidebar beside it) ===== */
+/* ===== GRID ===== */
 .grid {
-  display: flex; /* Use flex instead of grid for better control */
+  display:grid;
+  grid-template-columns: 1fr 260px;
   gap: 14px;
   margin-top: 12px;
 }
 
-/* ===== LEFT CHAT (make it wider) ===== */
-.left {
-  flex: 1 1 680px; /* Grow to take more space */
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* ===== LEFT CHAT ===== */
+.left { display:flex; flex-direction:column; gap:12px; }
 
-/* Adjust messages height and width */
 .messages {
-  height: 480px; /* slightly taller */
-  padding: 12px;
-  background: #111418;
-  border: 1px solid rgba(255, 255, 255, .05);
-  border-radius: 12px;
-  box-shadow: inset 0 0 12px rgba(0,0,0,.55);
-  scroll-behavior: smooth;
+  height:420px; overflow:auto; padding:12px;
+  background:#111418;
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:12px;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.55);
+  scroll-behavior:smooth;
 }
 .messages::-webkit-scrollbar{ width:8px; }
 .messages::-webkit-scrollbar-thumb{
@@ -256,21 +250,21 @@ h1 {
   box-shadow:0 12px 28px rgba(0,188,212,.25);
 }
 
-/* ===== RIGHT SIDEBAR (Online users + parties) ===== */
+/* ===== RIGHT SIDEBAR ===== */
 .right {
-  flex: 0 0 260px; /* fixed width sidebar */
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  background: #0f1216;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 12px;
-  padding: 12px;
+  background:#0f1216;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
 }
-/* Optional: keep some spacing between sections in sidebar */
 .right h3 {
-  margin-bottom: 6px;
-  
+  margin-bottom:8px;
+  color:var(--accent);
+  font-weight:600;
+  text-align:center;
+}
 .users {
   list-style:none;
   max-height:420px;
@@ -422,4 +416,35 @@ audio { display: none; } /* hide players */
 
 #nameColorPicker.visible + #closeColorPicker {
   display: inline-block;
+}
+
+/* ===== ADJUST CHAT AND SIDEBAR POSITION ===== */
+.grid {
+  grid-template-columns: 1fr 220px; /* Make chat bigger, sidebar narrower */
+  gap: 16px;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Make messages (chat box) slightly taller and wider */
+.messages {
+  height: 480px;  /* was 420px */
+  min-width: 100%; /* ensures chat fills its column */
+}
+
+/* Sidebar adjustments */
+.right {
+  max-height: 480px; /* match chat height */
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* Optional: ensure online users and parties list use full width */
+.users {
+  max-height: 220px; /* split sidebar for users and parties */
+  overflow-y: auto;
 }
