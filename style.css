@@ -51,7 +51,7 @@ h1 {
   animation:titleGlow 2.6s ease-in-out infinite;
 }
 @keyframes titleGlow {
-  0%,100{ text-shadow: 0 0 10px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
+  0%,100%{ text-shadow: 0 0 10px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
   50%{ text-shadow: 0 0 18px rgba(76,175,80,.95), 0 0 30px rgba(0,188,212,.15);}
 }
 
@@ -314,56 +314,41 @@ audio { display: none; } /* hide players */
   transform: scale(1.05);
 }
 
-/* ===== NAME COLOR PICKER ===== */
+/* === Change Name Color Button === */
 #changeColorContainer {
   display: none;
-  margin-top: 12px;
   align-items: center;
-  gap: 10px;
-  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 #changeColorBtn {
-  padding: 6px 14px;
-  background: #1b1f24;
-  color: #eee;
-  border: none;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-#changeColorBtn:hover {
+  border: none;
   background: #2a2f36;
+  color: #eee;
+  cursor: pointer;
+  font-weight: bold;
 }
+#changeColorBtn:hover { background:#3b414b; }
 
 #nameColorPicker {
   display: none;
-  width: 50px;
-  height: 35px;
-  border-radius: 8px;
-  cursor: pointer;
+  width: 45px;
+  height: 34px;
   border: none;
-  padding: 0;
-}
-#nameColorPicker.visible {
-  display: inline-block;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 #closeColorPicker {
   display: none;
-  margin-left: 6px;
   padding: 4px 10px;
-  border: none;
   border-radius: 6px;
-  cursor: pointer;
+  border: none;
   background: #2a2f36;
   color: #eee;
+  cursor: pointer;
   font-weight: bold;
-}
-#nameColorPicker.visible + #closeColorPicker {
-  display: inline-block;
-}
-#closeColorPicker:hover {
-  background: #3b414b;
 }
