@@ -313,3 +313,32 @@ audio { display: none; } /* hide players */
 .messages img:hover {
   transform: scale(1.05);
 }
+
+/* Change Name Color button */
+#changeColorContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#changeColorBtn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2a2f36;
+  color: #eee;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+#changeColorBtn:hover {
+  background: #3b414b;
+}
+
+#nameColorPicker {
+  width: 40px;
+  height: 32px;
+  border: none;
+  cursor: pointer;
+}
