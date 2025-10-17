@@ -10,31 +10,32 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname)));
 
-const users = {};                 // socket.id -> username
-const parties = {};               // roomName -> { password?: string, sockets:Set<string> }
+const users = {}; // socket.id -> username
+const parties = {}; // roomName -> { password?: string, sockets:Set<string> }
 
 function sendPartyList() {
   const list = Object.entries(parties).map(([name, r]) => ({
     name,
     isPrivate: !!r.password,
-    users: r.sockets.size
+    users: r.sockets.size,
   }));
   io.emit("updateParties", list);
 }
 
 io.on("connection", (socket) => {
-  // Set username first
-  socket.on("setUsername", (username) => {
-    const clean = (username || "").trim();
-    if (!clean) return;
-    users[socket.id] = clean;
-    io.emit("systemMessage", `🟢 ${clean} joined the chat`);
-    io.emit("updateUsers", Object.values(users));
-    // send current parties to the new user
-    sendPartyList();
-  });
+  // === Set username ===
+socket.on("setUsername", ({ username, color }) => {
+  const clean = (username || "").trim();
+  const safeColor = color || "#ffd700";
+  if (!clean) return;
+  users[socket.id] = { name: clean, color: safeColor };
+  io.emit("systemMessage", `🟢 ${clean} joined the chat`);
+  io.emit("updateUsers", Object.values(users).map(u => u.name));
+  sendPartyList();
+});
 
-  // Create party
+
+  // === Create party ===
   socket.on("createParty", ({ name, password }) => {
     const room = (name || "").trim();
     if (!room) return socket.emit("partyError", "Party name required.");
@@ -44,53 +45,88 @@ io.on("connection", (socket) => {
     socket.emit("partyCreated", room);
   });
 
-  // Join party
+  // === Join party ===
   socket.on("joinParty", ({ name, password }) => {
     const room = (name || "").trim();
     if (!room || !parties[room]) return socket.emit("partyError", "Party not found.");
     const needs = parties[room].password;
     if (needs && needs !== (password || "")) return socket.emit("partyError", "Wrong password.");
 
-    // leave previous party rooms (except the personal room)
+    // leave all other rooms except personal one
     for (const r of socket.rooms) {
-      if (r !== socket.id) socket.leave(r);
+      if (r !== socket.id) {
+        socket.leave(r);
+        if (parties[r]) parties[r].sockets.delete(socket.id);
+      }
     }
+
     socket.join(room);
     parties[room].sockets.add(socket.id);
 
-    const uname = users[socket.id] || "Anonymous";
+    const user = users[socket.id];
+const uname = user?.name || "Anonymous";
     io.to(room).emit("systemMessage", `🟢 ${uname} joined ${room}`);
     socket.emit("partyJoined", room);
     sendPartyList();
   });
 
-  // Send message (global or current party)
+  // === Leave party ===
+  socket.on("leaveParty", ({ party }) => {
+    if (!party || !parties[party]) return;
+    if (socket.rooms.has(party)) socket.leave(party);
+    parties[party].sockets.delete(socket.id);
+    const user = users[socket.id];
+const uname = user?.name || "Anonymous";
+    io.to(party).emit("systemMessage", `🔴 ${uname} left ${party}`);
+
+    // clean up empty parties
+    if (parties[party].sockets.size === 0) delete parties[party];
+    sendPartyList();
+  });
+
+  // === Send message ===
   socket.on("sendMessage", ({ message, party }) => {
     const text = (message || "").trim();
     if (!text) return;
-    const uname = users[socket.id] || "Anonymous";
+    const user = users[socket.id];
+const uname = user?.name || "Anonymous";
+const color = user?.color || "#ffd700";
 
+
+    // ✅ Only send messages to people in the same party
     if (party && parties[party]) {
-      io.to(party).emit("chatMessage", { username: uname, message: text });
+      io.to(party).emit("chatMessage", { username: uname, message: text, color });
     } else {
-      io.emit("chatMessage", { username: uname, message: text });
+      // 👇 If not in a party, only show to themselves
+      socket.emit("systemMessage", "Join a party to chat with others!");
     }
   });
 
+  // --- Typing indicator ---
+socket.on("typing", ({ party, isTyping }) => {
+  const user = users[socket.id];
+  const uname = user?.name || "Anonymous";
+  if (!party || !parties[party]) return;
+  socket.to(party).emit("typing", { username: uname, isTyping, party });
+});
+
+  // === Disconnect ===
   socket.on("disconnect", () => {
-    const uname = users[socket.id];
-    if (uname) {
-      io.emit("systemMessage", `🔴 ${uname} left the chat`);
-      delete users[socket.id];
-      io.emit("updateUsers", Object.values(users));
-    }
-    // remove from any parties
+  const user = users[socket.id];
+if (user) {
+  io.emit("systemMessage", `🔴 ${user.name} left the chat`);
+  delete users[socket.id];
+  io.emit("updateUsers", Object.values(users).map(u => u.name));
+}
+
+    // remove user from any parties
     for (const [room, info] of Object.entries(parties)) {
       if (info.sockets.has(socket.id)) {
         info.sockets.delete(socket.id);
         if (info.sockets.size === 0) delete parties[room];
       }
     }
+
     sendPartyList();
   });
 });

@@ -14,6 +14,7 @@
     <form id="usernameForm" class="card">
       <h2>Join the party</h2>
       <input type="text" id="usernameInput" placeholder="Pick a username…" required />
+      <input type="color" id="usernameColor" value="#ffd700" title="Choose your name color" />
       <button type="submit">Enter Chat</button>
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
@@ -25,8 +26,9 @@
 
         <!-- composer -->
         <div class="composer">
-          <input id="messageInput" type="text" placeholder="Type a message… (Enter to send)"/>
+          <input id="messageInput" type="text" placeholder="Type a message…"/>
           <button id="sendButton" type="button">Send</button>
+          <div id="typingIndicator" class="system" style="display:none;">Someone is typing…</div>
         </div>
 
         <!-- PARTY CONTROLS -->
@@ -42,6 +44,7 @@
             <div class="party-actions">
               <button id="createPartyBtn" type="button">Create Party</button>
               <button id="joinPartyBtn" type="button">Join Party</button>
+              <button id="leavePartyBtn" type="button">Leave Party</button>
             </div>
           </div>
         </div>
@@ -66,5 +69,12 @@
     const send = document.getElementById('sendButton');
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
   </script>
+
+<!-- Chat sounds -->
+
+
+<!-- Silent unlock video -->
+<video id="unlockVideo" playsinline muted loop style="display:none;"></video>
+
 </body>
 </html>
