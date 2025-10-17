@@ -21,6 +21,11 @@ const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
 const leavePartyBtn = document.getElementById("leavePartyBtn");
 
+// --- New DOM elements for color button ---
+const changeColorContainer = document.getElementById("changeColorContainer");
+const changeColorBtn = document.getElementById("changeColorBtn");
+const nameColorPicker = document.getElementById("nameColorPicker");
+
 // --- Universal sound system ---
 const playSound = (file) => {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -138,6 +143,9 @@ usernameForm.addEventListener("submit", (e) => {
 
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
+
+  // Show change color button after username
+  changeColorContainer.style.display = "block";
 });
 
 // --- If username is saved, auto-set it ---
@@ -145,6 +153,9 @@ if (username) {
   socket.emit("setUsername", { username, color: savedColor });
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
+
+  // Show change color button
+  changeColorContainer.style.display = "block";
 }
 
 // --- Send message ---
@@ -235,8 +246,6 @@ leavePartyBtn.addEventListener("click", () => {
 // --- Auto-join after creating a party ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
-
-  // Auto-join created party
   socket.emit("joinParty", { name: room, password: "" });
 });
 
@@ -298,12 +307,26 @@ socket.on("updateParties", (list) => {
       partyNameInput.value = p.name;
       partyPasswordInput.value = "";
       if (!p.isPrivate) {
-        // Auto-join public party
         socket.emit("joinParty", { name: p.name, password: "" });
       }
     };
     partiesList.appendChild(row);
   });
+});
+
+// --- Name color change button ---
+changeColorBtn.addEventListener("click", () => {
+  nameColorPicker.click();
+});
+
+nameColorPicker.addEventListener("input", (e) => {
+  savedColor = e.target.value;
+  localStorage.setItem("chatColor", savedColor);
+
+  if (username) {
+    socket.emit("setUsername", { username, color: savedColor });
+    systemLine(`✅ Your name color was changed!`);
+  }
 });
 
 // --- Helpers ---
@@ -324,11 +347,3 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
-
-// When showing the chat container after username is set
-usernameForm.style.display = "none";
-chatContainer.style.display = "block";
-
-// Optional: show the change color button
-const changeColorBtn = document.getElementById("changeColorBtn");
-changeColorBtn.style.display = "inline-block"; // ensure visible
