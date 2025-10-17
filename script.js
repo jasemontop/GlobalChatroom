@@ -44,9 +44,8 @@ const playSound = (file) => {
     .catch(err => console.warn("Sound error:", err));
 };
 
-// --- Paste image but send only on Enter/Send ---
+// --- Paste image handling ---
 let pastedImageData = null;
-
 document.addEventListener("paste", (event) => {
   const items = event.clipboardData?.items;
   if (!items) return;
@@ -76,7 +75,7 @@ document.addEventListener("paste", (event) => {
           cancel.style.borderRadius = "8px";
           cancel.style.cursor = "pointer";
           cancel.style.background = "#2a2f36";
-          cancel.style.color = "#eee";
+          cancel.style.color = "#fff";
           cancel.onclick = () => { preview.remove(); pastedImageData = null; };
           preview.appendChild(img);
           preview.appendChild(cancel);
@@ -91,19 +90,13 @@ document.addEventListener("paste", (event) => {
 });
 
 // --- Unlock Chrome audio ---
-const sndSend = document.getElementById("sndSend");
-const sndRecv = document.getElementById("sndRecv");
-
 const unlockAudio = () => {
   const silent = document.createElement("video");
   silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA==";
   silent.muted = true;
   silent.play().catch(()=>{});
   setTimeout(() => silent.remove(), 2000);
-  [sndSend, sndRecv].forEach(snd => { if (!snd) return; playSound("rec.mp3"); });
-  console.log("✅ Chrome audio fully unlocked");
 };
-
 window.addEventListener("click", unlockAudio, { once: true });
 
 // --- Username form submission ---
@@ -124,7 +117,7 @@ usernameForm.addEventListener("submit", (e) => {
   if (btnContainer) btnContainer.style.display = "flex";
 });
 
-// --- If username is saved, auto-set it ---
+// --- Auto-set username if saved ---
 if (username) {
   socket.emit("setUsername", { username, color: savedColor });
   usernameForm.style.display = "none";
@@ -136,13 +129,10 @@ if (username) {
 // --- Send message ---
 sendButton.addEventListener("click", () => {
   if (pastedImageData) {
-    if (sendButton.disabled) return;
-    sendButton.disabled = true;
     socket.emit("sendImage", { image: pastedImageData, party: currentParty });
     const preview = document.getElementById("imagePreview");
     if (preview) preview.remove();
     pastedImageData = null;
-    setTimeout(() => (sendButton.disabled = false), 600);
     return;
   }
   const text = (messageInput.value || "").trim();
@@ -160,6 +150,7 @@ messageInput.addEventListener("keydown", (e) => {
   }
 });
 
+// --- Typing indicator ---
 let typingTimeout;
 messageInput.addEventListener("input", () => {
   if (!currentParty) return;
@@ -170,16 +161,11 @@ messageInput.addEventListener("input", () => {
   }, 1000);
 });
 
-// --- Typing indicator ---
-socket.on("typing", ({ username, isTyping, party }) => {
+socket.on("typing", ({ username: typUser, isTyping, party }) => {
   const indicator = document.getElementById("typingIndicator");
   if (!indicator || party !== currentParty) return;
-  if (isTyping) {
-    indicator.style.display = "block";
-    indicator.textContent = `${username} is typing…`;
-  } else {
-    indicator.style.display = "none";
-  }
+  indicator.style.display = isTyping ? "block" : "none";
+  indicator.textContent = isTyping ? `${typUser} is typing…` : "";
 });
 
 // --- Party buttons ---
@@ -217,71 +203,71 @@ socket.on("partyJoined", (room) => {
 
 socket.on("partyError", (msg) => alert(msg));
 
-// --- Chat messages with delete button ---
-socket.on("chatMessage", ({ username: msgUser, message, color, id }) => {
-  playSound("rec.mp3");
-  const div = document.createElement("div");
-  div.classList.add("message");
-  div.dataset.id = id; // unique message id
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: ${escapeHtml(message)}`;
-
-  // Add delete button if it’s your own message
-  if (msgUser === username) {
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "🗑";
-    delBtn.style.marginLeft = "8px";
-    delBtn.style.border = "none";
-    delBtn.style.background = "transparent";
-    delBtn.style.cursor = "pointer";
-    delBtn.onclick = () => {
-      socket.emit("deleteMessage", { id });
-      div.remove();
-    };
-    div.appendChild(delBtn);
-  }
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-});
-
-socket.on("chatImage", ({ username: imgUser, image, color, id }) => {
-  playSound("rec.mp3");
+// --- Chat messages with proper delete button ---
+function createMessageElement({ id, username: msgUser, message, color, image }) {
   const div = document.createElement("div");
   div.classList.add("message");
   div.dataset.id = id;
-  const img = document.createElement("img");
-  img.src = image;
-  img.style.maxWidth = "200px";
-  img.style.borderRadius = "10px";
-  img.style.marginTop = "6px";
-  img.style.display = "block";
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(imgUser)}</strong>:`;
-  div.appendChild(img);
 
-  if (imgUser === username) {
+  if (image) {
+    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: `;
+    const img = document.createElement("img");
+    img.src = image;
+    img.style.maxWidth = "200px";
+    img.style.borderRadius = "10px";
+    img.style.display = "block";
+    img.style.marginTop = "6px";
+    div.appendChild(img);
+  } else {
+    div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: ${escapeHtml(message)}`;
+  }
+
+  // Delete button only for own messages
+  if (msgUser === username) {
     const delBtn = document.createElement("button");
-    delBtn.textContent = "🗑";
-    delBtn.style.marginLeft = "8px";
+    delBtn.textContent = "✕";
+    delBtn.title = "Delete message";
+    delBtn.style.float = "right";
     delBtn.style.border = "none";
     delBtn.style.background = "transparent";
+    delBtn.style.color = "#fff";
     delBtn.style.cursor = "pointer";
+    delBtn.style.fontWeight = "bold";
     delBtn.onclick = () => {
-      socket.emit("deleteMessage", { id });
-      div.remove();
+      if (confirm("Are you sure you want to delete this message?")) {
+        socket.emit("deleteMessage", { id });
+      }
     };
     div.appendChild(delBtn);
   }
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+socket.on("chatMessage", (data) => {
+  playSound("rec.mp3");
+  createMessageElement(data);
 });
 
-// --- System and user updates ---
+socket.on("chatImage", (data) => {
+  playSound("rec.mp3");
+  createMessageElement({ ...data, image: data.image });
+});
+
+// --- Delete message from DOM ---
+socket.on("deleteMessage", ({ id }) => {
+  const msg = chat.querySelector(`div.message[data-id="${id}"]`);
+  if (msg) msg.remove();
+});
+
+// --- System & User Updates ---
 socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
   userList.innerHTML = "";
-  users.forEach((u) => {
+  users.forEach(u => {
     const li = document.createElement("li");
     li.textContent = u;
     userList.appendChild(li);
@@ -290,7 +276,7 @@ socket.on("updateUsers", (users) => {
 
 socket.on("updateParties", (list) => {
   partiesList.innerHTML = "";
-  list.forEach((p) => {
+  list.forEach(p => {
     const row = document.createElement("li");
     row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
     row.style.cursor = "pointer";
@@ -312,25 +298,21 @@ function systemLine(text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-function toast(msg) {
-  systemLine(msg);
-}
+function toast(msg) { systemLine(msg); }
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-// === Name Color Button Logic ===
+// === Name Color Logic ===
 const changeColorContainer = document.getElementById("changeColorContainer");
 const changeColorBtn = document.getElementById("changeColorBtn");
 const nameColorPicker = document.getElementById("nameColorPicker");
 
-// Toggle picker visibility
 changeColorBtn.addEventListener("click", () => {
   nameColorPicker.style.display = nameColorPicker.style.display === "block" ? "none" : "block";
 });
 
-// Only send color after user finishes choosing
 let colorChangeTimer;
 nameColorPicker.addEventListener("input", (e) => {
   const newColor = e.target.value;
