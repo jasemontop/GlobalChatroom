@@ -106,24 +106,31 @@ h1 {
   text-align:center;
 }
 
-/* ===== GRID ===== */
+/* ===== GRID (MAIN LAYOUT) ===== */
 .grid {
-  display:grid;
-  grid-template-columns: 1fr 300px; /* left chat + right sidebar */
+  display: flex;
   gap: 14px;
   margin-top: 12px;
+  height: 600px; /* total container height */
 }
 
 /* ===== LEFT CHAT ===== */
-.left { display:flex; flex-direction:column; gap:12px; }
+.left {
+  flex: 2; /* chat takes main space */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 .messages {
-  height:420px; overflow:auto; padding:12px;
-  background:#111418;
+  flex: 1; /* fill vertical space */
+  overflow-y: auto;
+  padding: 12px;
+  background: #111418;
   border:1px solid rgba(255,255,255,.05);
   border-radius:12px;
   box-shadow:inset 0 0 12px rgba(0,0,0,.55);
-  scroll-behavior:smooth;
+  scroll-behavior: smooth;
 }
 .messages::-webkit-scrollbar{ width:8px; }
 .messages::-webkit-scrollbar-thumb{
@@ -183,78 +190,70 @@ h1 {
   box-shadow:0 12px 30px rgba(0,188,212,.28);
 }
 
-/* ===== RIGHT SIDEBAR (NEW BOXES) ===== */
+/* ===== RIGHT SIDEBAR ===== */
 .right {
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  max-height: 100%;
-}
-
-/* Each box inside sidebar */
-.sidebar-box {
-  background:#0f1216;
-  border:1px solid rgba(255,255,255,.06);
+  flex: 1;
+  background: #0f1216;
+  border: 1px solid rgba(255,255,255,.06);
   border-radius:12px;
   padding:12px;
   display:flex;
   flex-direction:column;
+  gap:12px;
+  overflow-y: auto;
 }
+
+/* Sidebar Box grouping all features */
+.sidebar-box {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* Box headers */
 .sidebar-box h3 {
-  margin-bottom:8px;
-  color:var(--accent);
   font-weight:600;
+  color:var(--accent);
   text-align:center;
 }
 
-/* Available Parties Box */
-#availableParties { max-height:140px; overflow:auto; }
-#availableParties li {
+/* Users & Parties Lists */
+.users {
+  list-style:none;
+  max-height:120px;
+  overflow-y:auto;
+  padding:4px 2px;
+}
+.users li {
   padding:8px 10px;
   margin:6px 0;
   border-radius:8px;
   background:#171b20;
   border:1px solid rgba(255,255,255,.06);
-  animation:msgIn .2s ease both;
   word-wrap:break-word;
-}
-#availableParties li:hover {
-  background:#1f252b;
-  transform:translateY(-1px);
   transition:.15s;
 }
-
-/* Online Users Box */
-#onlineUsers { max-height:140px; overflow:auto; }
-#onlineUsers li {
-  padding:8px 10px;
-  margin:6px 0;
-  border-radius:8px;
-  background:#171b20;
-  border:1px solid rgba(255,255,255,.06);
-  animation:msgIn .2s ease both;
-  word-wrap:break-word;
-}
-#onlineUsers li:hover {
+.users li:hover {
   background:#1f252b;
   transform:translateY(-1px);
-  transition:.15s;
 }
 
-/* Party Controls Box */
-#partyControls { display:flex; flex-direction:column; gap:8px; }
-#partyControls label { font-size:.9rem; color:var(--muted); }
-#partyControls input {
+/* Party Controls inside sidebar */
+.party-controls label {
+  font-size:.9rem;
+  color: var(--muted);
+}
+.party-controls input {
   width:100%;
   padding:9px 10px;
   border-radius:8px;
   border:1px solid rgba(255,255,255,.08);
   background:#13161a;
-  color:var(--text);
+  color: var(--text);
   outline:none;
   transition:.2s;
 }
-#partyControls input:focus {
+.party-controls input:focus {
   border-color:rgba(126,249,169,.4);
   box-shadow:0 0 0 3px rgba(126,249,169,.1);
 }
@@ -299,6 +298,3 @@ h1 {
   transform: translateY(-1px) scale(1.02);
   box-shadow: 0 12px 28px rgba(255, 68, 68, .35);
 }
-
-/* Other Elements (unchanged) */
-#usernameColor, audio, .messages img, #changeColorContainer, #changeColorBtn, #nameColorPicker { /* all preserved */ }
