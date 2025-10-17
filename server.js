@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -99,6 +98,7 @@ io.on("connection", (socket) => {
     }
   });
 
+  // === Send image ===
   socket.on("sendImage", ({ image, party }) => {
     const user = users[socket.id];
     const uname = user?.name || "Anonymous";
@@ -112,13 +112,15 @@ io.on("connection", (socket) => {
     }
   });
 
-  // === Delete message ===
+  // === Delete message (for all in the party) ===
   socket.on("deleteMessage", ({ id }) => {
+    // Broadcast delete to all rooms the sender is in
     for (const room of socket.rooms) {
       if (room !== socket.id && parties[room]) {
         io.to(room).emit("deleteMessage", { id });
       }
     }
+    // Also delete locally for the sender
     socket.emit("deleteMessage", { id });
   });
 
