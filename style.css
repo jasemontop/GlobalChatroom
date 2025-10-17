@@ -342,3 +342,56 @@ audio { display: none; } /* hide players */
   border: none;
   cursor: pointer;
 }
+
+/* === Name Color Button === */
+#changeColorContainer {
+  display: none;
+  margin-top: 12px;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+#changeColorBtn {
+  padding: 6px 14px;
+  background: #1b1f24;
+  color: #eee;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#changeColorBtn:hover {
+  background: #2a2f36;
+}
+
+#nameColorPicker {
+  display: none;
+  position: relative;
+}
+
+#nameColorPicker.visible {
+  display: inline-block;
+  width: 50px;
+  height: 35px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#closeColorPicker {
+  display: none;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #2a2f36;
+  color: #eee;
+  font-weight: bold;
+}
+
+#nameColorPicker.visible + #closeColorPicker {
+  display: inline-block;
+}
