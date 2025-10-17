@@ -106,24 +106,30 @@ h1 {
   text-align:center;
 }
 
-/* ===== GRID ===== */
+/* ===== GRID (Adjusted for larger chat + sidebar beside it) ===== */
 .grid {
-  display:grid;
-  grid-template-columns: 1fr 260px;
+  display: flex; /* Use flex instead of grid for better control */
   gap: 14px;
   margin-top: 12px;
 }
 
-/* ===== LEFT CHAT ===== */
-.left { display:flex; flex-direction:column; gap:12px; }
+/* ===== LEFT CHAT (make it wider) ===== */
+.left {
+  flex: 1 1 680px; /* Grow to take more space */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
+/* Adjust messages height and width */
 .messages {
-  height:420px; overflow:auto; padding:12px;
-  background:#111418;
-  border:1px solid rgba(255,255,255,.05);
-  border-radius:12px;
-  box-shadow:inset 0 0 12px rgba(0,0,0,.55);
-  scroll-behavior:smooth;
+  height: 480px; /* slightly taller */
+  padding: 12px;
+  background: #111418;
+  border: 1px solid rgba(255, 255, 255, .05);
+  border-radius: 12px;
+  box-shadow: inset 0 0 12px rgba(0,0,0,.55);
+  scroll-behavior: smooth;
 }
 .messages::-webkit-scrollbar{ width:8px; }
 .messages::-webkit-scrollbar-thumb{
@@ -250,21 +256,21 @@ h1 {
   box-shadow:0 12px 28px rgba(0,188,212,.25);
 }
 
-/* ===== RIGHT SIDEBAR ===== */
+/* ===== RIGHT SIDEBAR (Online users + parties) ===== */
 .right {
-  background:#0f1216;
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:12px;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
+  flex: 0 0 260px; /* fixed width sidebar */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #0f1216;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
+  padding: 12px;
 }
+/* Optional: keep some spacing between sections in sidebar */
 .right h3 {
-  margin-bottom:8px;
-  color:var(--accent);
-  font-weight:600;
-  text-align:center;
-}
+  margin-bottom: 6px;
+  
 .users {
   list-style:none;
   max-height:420px;
