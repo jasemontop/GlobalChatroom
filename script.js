@@ -324,3 +324,11 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
+
+// When showing the chat container after username is set
+usernameForm.style.display = "none";
+chatContainer.style.display = "block";
+
+// Optional: show the change color button
+const changeColorBtn = document.getElementById("changeColorBtn");
+changeColorBtn.style.display = "inline-block"; // ensure visible
