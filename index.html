@@ -10,7 +10,7 @@
   <div id="chat-container">
     <h1>🌍 Global Chatroom</h1>
 
-    <!-- USERNAME -->
+    <!-- USERNAME FORM -->
     <form id="usernameForm" class="card">
       <h2>Join the party</h2>
       <input type="text" id="usernameInput" placeholder="Pick a username…" required />
@@ -19,22 +19,11 @@
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
 
-    <!-- CHANGE NAME COLOR BUTTON (HIDDEN UNTIL USER SETS NAME) -->
-    <div id="changeColorContainer" style="display:none; margin:10px 0;">
-      <button id="changeColorBtn" type="button">Change Name Color</button>
-      <input type="color" id="nameColorPicker" style="display:none;" />
-    </div>
-
-    <!-- CHAT + SIDEBAR -->
+    <!-- CHAT GRID -->
     <div id="chatContainer" class="card grid" style="display:none;">
+      <!-- LEFT CHAT -->
       <div class="left">
         <div id="chat" class="messages"></div>
-        <div id="changeColorContainer">
-  <button id="changeColorBtn">🎨 Change Name Color</button>
-  <input type="color" id="nameColorPicker" />
-  <button id="closeColorPicker">✕</button>
-</div>
-
 
         <!-- composer -->
         <div class="composer">
@@ -43,16 +32,24 @@
           <div id="typingIndicator" class="system" style="display:none;">Someone is typing…</div>
         </div>
 
-        <!-- PARTY CONTROLS -->
-        <div class="card" style="margin-top:10px;">
-          <h3 style="margin-bottom:8px;">Party Controls</h3>
+        <!-- Change Name Color Button -->
+        <div id="changeColorContainer">
+          <button id="changeColorBtn">🎨 Change Name Color</button>
+          <input type="color" id="nameColorPicker" />
+          <button id="closeColorPicker">✕</button>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="right">
+        <!-- Party Controls -->
+        <div class="party-controls-card">
+          <h3>Party Controls</h3>
           <div class="party-controls">
             <label>Party Name:</label>
             <input type="text" id="partyNameInput" placeholder="e.g., Family, Friends, Study Group"/>
-
             <label>Password:</label>
             <input type="text" id="partyPasswordInput" placeholder="leave empty for Public"/>
-
             <div class="party-actions">
               <button id="createPartyBtn" type="button">Create Party</button>
               <button id="joinPartyBtn" type="button">Join Party</button>
@@ -61,14 +58,14 @@
           </div>
         </div>
 
-      </div>
+        <!-- Online Users & Available Parties -->
+        <div class="users-container">
+          <h3>Online Now</h3>
+          <ul id="userList" class="users"></ul>
 
-      <div class="right">
-        <h3>Online now</h3>
-        <ul id="userList" class="users"></ul>
-
-        <h3 style="margin-top:12px;">Available Parties</h3>
-        <div id="partiesList" class="users"></div>
+          <h3>Available Parties</h3>
+          <ul id="partiesList" class="users"></ul>
+        </div>
       </div>
     </div>
   </div>
@@ -79,13 +76,14 @@
     // Enter key sends message
     const input = document.getElementById('messageInput');
     const send = document.getElementById('sendButton');
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
+    input.addEventListener('keydown', (e) => { 
+      if (e.key === 'Enter') { 
+        e.preventDefault(); 
+        send.click(); 
+      }
+    });
   </script>
 
-  <!-- Chat sounds -->
-
-  <!-- Silent unlock video -->
   <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
-
 </body>
 </html>
