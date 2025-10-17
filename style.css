@@ -314,137 +314,31 @@ audio { display: none; } /* hide players */
   transform: scale(1.05);
 }
 
-/* === Change Name Color Button === */
+/* Change Name Color button */
 #changeColorContainer {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
 }
 
 #changeColorBtn {
   padding: 6px 12px;
-  border-radius: 8px;
   border: none;
+  border-radius: 8px;
   background: #2a2f36;
   color: #eee;
   cursor: pointer;
   font-weight: bold;
-}
-#changeColorBtn:hover { background:#3b414b; }
-
-#nameColorPicker {
-  display: none;
-  width: 45px;
-  height: 34px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-#closeColorPicker {
-  display: none;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: none;
-  background: #2a2f36;
-  color: #eee;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-/* === Change Name Color Button (In-Chat) === */
-#changeColorContainer {
-  display: none; /* Hidden until user sets username */
-  margin-top: 12px;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-}
-
-#changeColorBtn {
-  padding: 6px 14px;
-  background: #1b1f24;
-  color: #eee;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition: background 0.2s;
 }
 
 #changeColorBtn:hover {
-  background: #2a2f36;
-  transform: translateY(-1px) scale(1.02);
+  background: #3b414b;
 }
 
 #nameColorPicker {
-  display: none; /* Hidden by default */
-  width: 48px;
-  height: 36px;
+  width: 40px;
+  height: 32px;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-
-#nameColorPicker:hover {
-  transform: scale(1.05);
-}
-
-#closeColorPicker {
-  display: none; /* Hidden by default */
-  padding: 4px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #2a2f36;
-  color: #eee;
-  font-weight: bold;
-  transition: background 0.2s, transform 0.2s;
-}
-
-#closeColorPicker:hover {
-  background: #3b414b;
-  transform: translateY(-1px) scale(1.02);
-}
-
-/* Show picker and close button when active */
-#nameColorPicker.visible {
-  display: inline-block;
-}
-
-#nameColorPicker.visible + #closeColorPicker {
-  display: inline-block;
-}
-
-/* ===== ADJUST CHAT AND SIDEBAR POSITION ===== */
-.grid {
-  grid-template-columns: 1fr 220px; /* Make chat bigger, sidebar narrower */
-  gap: 16px;
-}
-
-.left {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Make messages (chat box) slightly taller and wider */
-.messages {
-  height: 480px;  /* was 420px */
-  min-width: 100%; /* ensures chat fills its column */
-}
-
-/* Sidebar adjustments */
-.right {
-  max-height: 480px; /* match chat height */
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-/* Optional: ensure online users and parties list use full width */
-.users {
-  max-height: 220px; /* split sidebar for users and parties */
-  overflow-y: auto;
 }
