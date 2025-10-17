@@ -1,337 +1,172 @@
-const socket = io();
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
 
-// --- Load saved username from localStorage ---
-let username = localStorage.getItem("chatUsername") || "";
-let savedColor = localStorage.getItem("chatColor") || "#ffd700";
-let currentParty = null;
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-// DOM
-const usernameForm = document.getElementById("usernameForm");
-const usernameInput = document.getElementById("usernameInput");
-const usernameColorInput = document.getElementById("usernameColor");
-const chatContainer = document.getElementById("chatContainer");
-const chat = document.getElementById("chat");
-const messageInput = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-const userList = document.getElementById("userList");
-const partiesList = document.getElementById("partiesList");
-const partyNameInput = document.getElementById("partyNameInput");
-const partyPasswordInput = document.getElementById("partyPasswordInput");
-const createPartyBtn = document.getElementById("createPartyBtn");
-const joinPartyBtn = document.getElementById("joinPartyBtn");
-const leavePartyBtn = document.getElementById("leavePartyBtn");
+app.use(express.static(path.join(__dirname)));
 
-// --- Universal sound system ---
-const playSound = (file) => {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  fetch(file)
-    .then(res => res.arrayBuffer())
-    .then(buf => ctx.decodeAudioData(buf))
-    .then(audioBuf => {
-      const src = ctx.createBufferSource();
-      const gain = ctx.createGain();
-      src.buffer = audioBuf;
-      src.connect(gain);
-      gain.connect(ctx.destination);
-      gain.gain.value = 0.40;
-      const duration = audioBuf.duration * 0.35;
-      const endTime = ctx.currentTime + duration;
-      gain.gain.setValueAtTime(0.35, endTime - 0.03);
-      gain.gain.linearRampToValueAtTime(0, endTime);
-      src.start(0, 0, duration);
-      src.stop(endTime);
-    })
-    .catch(err => console.warn("Sound error:", err));
-};
+const users = {}; // socket.id -> {name,color}
+const parties = {}; // roomName -> { password?: string, sockets:Set<string>, messages: Array<{id, username, text, image?, color}> }
 
-// --- Paste image but send only on Enter/Send ---
-let pastedImageData = null;
-document.addEventListener("paste", (event) => {
-  const items = event.clipboardData?.items;
-  if (!items) return;
-  for (const item of items) {
-    if (item.type.startsWith("image/")) {
-      const file = item.getAsFile();
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        pastedImageData = e.target.result;
-        let preview = document.getElementById("imagePreview");
-        if (!preview) {
-          preview = document.createElement("div");
-          preview.id = "imagePreview";
-          preview.style.display = "flex";
-          preview.style.alignItems = "center";
-          preview.style.gap = "8px";
-          preview.style.margin = "6px 0";
-          const img = document.createElement("img");
-          img.style.maxWidth = "120px";
-          img.style.borderRadius = "8px";
-          img.alt = "Pasted preview";
-          const cancel = document.createElement("button");
-          cancel.textContent = "✕";
-          cancel.title = "Remove image";
-          cancel.style.padding = "6px 10px";
-          cancel.style.border = "0";
-          cancel.style.borderRadius = "8px";
-          cancel.style.cursor = "pointer";
-          cancel.style.background = "#2a2f36";
-          cancel.style.color = "#eee";
-          cancel.onclick = () => { preview.remove(); pastedImageData = null; };
-          preview.appendChild(img);
-          preview.appendChild(cancel);
-          messageInput.parentNode.insertBefore(preview, messageInput);
-        }
-        preview.querySelector("img").src = pastedImageData;
-      };
-      reader.readAsDataURL(file);
-      break;
+// --- Helper to send party list ---
+function sendPartyList() {
+  const list = Object.entries(parties).map(([name, r]) => ({
+    name,
+    isPrivate: !!r.password,
+    users: r.sockets.size,
+  }));
+  io.emit("updateParties", list);
+}
+
+// Generate unique message IDs
+const generateId = () => Math.random().toString(36).substring(2, 10);
+
+io.on("connection", (socket) => {
+  // === Set username ===
+  socket.on("setUsername", ({ username, color }) => {
+    const clean = (username || "").trim();
+    const safeColor = color || "#ffd700";
+    if (!clean) return;
+    users[socket.id] = { name: clean, color: safeColor };
+    io.emit("systemMessage", `🟢 ${clean} joined the chat`);
+    io.emit("updateUsers", Object.values(users).map(u => u.name));
+    sendPartyList();
+  });
+
+  // === Create party ===
+  socket.on("createParty", ({ name, password }) => {
+    const room = (name || "").trim();
+    if (!room) return socket.emit("partyError", "Party name required.");
+    if (parties[room]) return socket.emit("partyError", "Party already exists.");
+    parties[room] = { password: (password || "").trim() || null, sockets: new Set(), messages: [] };
+    sendPartyList();
+    socket.emit("partyCreated", room);
+  });
+
+  // === Join party ===
+  socket.on("joinParty", ({ name, password }) => {
+    const room = (name || "").trim();
+    if (!room || !parties[room]) return socket.emit("partyError", "Party not found.");
+    const needs = parties[room].password;
+    if (needs && needs !== (password || "")) return socket.emit("partyError", "Wrong password.");
+
+    // Leave other rooms
+    for (const r of socket.rooms) {
+      if (r !== socket.id) {
+        socket.leave(r);
+        if (parties[r]) parties[r].sockets.delete(socket.id);
+      }
     }
-  }
-});
 
-// --- Unlock Chrome audio ---
-const sndSend = document.getElementById("sndSend");
-const sndRecv = document.getElementById("sndRecv");
-const unlockAudio = () => {
-  const silent = document.createElement("video");
-  silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA==";
-  silent.muted = true;
-  silent.play().catch(()=>{});
-  setTimeout(() => silent.remove(), 2000);
-  [sndSend, sndRecv].forEach(snd => { if (!snd) return; playSound("rec.mp3"); });
-  console.log("✅ Chrome audio fully unlocked");
-};
-window.addEventListener("click", unlockAudio, { once: true });
+    socket.join(room);
+    parties[room].sockets.add(socket.id);
 
-// --- Username form submission ---
-usernameForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = (usernameInput.value || "").trim();
-  const color = usernameColorInput.value || "#ffd700";
-  if (!name) return;
-  username = name;
-  savedColor = color;
-  localStorage.setItem("chatUsername", username);
-  localStorage.setItem("chatColor", color);
-  socket.emit("setUsername", { username, color });
-  usernameForm.style.display = "none";
-  chatContainer.style.display = "block";
+    const user = users[socket.id];
+    const uname = user?.name || "Anonymous";
 
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
-});
-
-// --- If username is saved, auto-set it ---
-if (username) {
-  socket.emit("setUsername", { username, color: savedColor });
-  usernameForm.style.display = "none";
-  chatContainer.style.display = "block";
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
-}
-
-// --- Send message ---
-sendButton.addEventListener("click", () => {
-  if (pastedImageData) {
-    if (sendButton.disabled) return;
-    sendButton.disabled = true;
-    socket.emit("sendImage", { image: pastedImageData, party: currentParty });
-    const preview = document.getElementById("imagePreview");
-    if (preview) preview.remove();
-    pastedImageData = null;
-    setTimeout(() => (sendButton.disabled = false), 600);
-    return;
-  }
-  const text = (messageInput.value || "").trim();
-  if (!text) return;
-  if (!username) return alert("Set a username first!");
-  socket.emit("sendMessage", { message: text, party: currentParty });
-  playSound("send.mp3");
-  messageInput.value = "";
-});
-
-messageInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendButton.click();
-  }
-});
-
-let typingTimeout;
-messageInput.addEventListener("input", () => {
-  if (!currentParty) return;
-  socket.emit("typing", { party: currentParty, isTyping: true });
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    socket.emit("typing", { party: currentParty, isTyping: false });
-  }, 1000);
-});
-
-// --- Typing indicator ---
-socket.on("typing", ({ username: uname, isTyping, party }) => {
-  const indicator = document.getElementById("typingIndicator");
-  if (!indicator || party !== currentParty) return;
-  if (isTyping) {
-    indicator.style.display = "block";
-    indicator.textContent = `${uname} is typing…`;
-  } else {
-    indicator.style.display = "none";
-  }
-});
-
-// --- Party buttons ---
-createPartyBtn.addEventListener("click", () => {
-  const name = (partyNameInput.value || "").trim();
-  const password = (partyPasswordInput.value || "").trim();
-  if (!name) return alert("Party name required.");
-  socket.emit("createParty", { name, password });
-});
-
-joinPartyBtn.addEventListener("click", () => {
-  const name = (partyNameInput.value || "").trim();
-  const password = (partyPasswordInput.value || "").trim();
-  if (!name) return alert("Enter a party name to join.");
-  socket.emit("joinParty", { name, password });
-});
-
-leavePartyBtn.addEventListener("click", () => {
-  if (!currentParty) return alert("You’re not in a party!");
-  socket.emit("leaveParty", { party: currentParty });
-  systemLine(`You left ${currentParty}`);
-  currentParty = null;
-});
-
-// --- Auto-join after creating a party ---
-socket.on("partyCreated", (room) => {
-  toast(`✅ Party "${room}" created`);
-  socket.emit("joinParty", { name: room, password: "" });
-});
-
-socket.on("partyJoined", (room) => {
-  currentParty = room;
-  systemLine(`Joined party: ${room}`);
-});
-
-socket.on("partyError", (msg) => alert(msg));
-
-// --- Chat messages with delete button feature ---
-socket.on("chatMessage", ({ id, username: uname, message, color }) => {
-  playSound("rec.mp3");
-  const div = document.createElement("div");
-  div.classList.add("message");
-  div.dataset.id = id;
-
-  let html = `<strong style="color:${color || "#ffd700"}">${escapeHtml(uname)}</strong>: ${escapeHtml(message)}`;
-  if (uname === username) {
-    html += ` <button class="deleteMsgBtn" style="margin-left:8px;">✕</button>`;
-  }
-  div.innerHTML = html;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-
-  const delBtn = div.querySelector(".deleteMsgBtn");
-  if (delBtn) {
-    delBtn.addEventListener("click", () => {
-      socket.emit("deleteMessage", { party: currentParty, id });
+    // Send previous messages to newly joined user
+    parties[room].messages.forEach(msg => {
+      if (msg.text) socket.emit("chatMessage", msg);
+      if (msg.image) socket.emit("chatImage", msg);
     });
-  }
-});
 
-socket.on("chatImage", ({ id, username: uname, image, color }) => {
-  playSound("rec.mp3");
-  const div = document.createElement("div");
-  div.classList.add("message");
-  div.dataset.id = id;
-  const img = document.createElement("img");
-  img.src = image;
-  img.style.maxWidth = "200px";
-  img.style.borderRadius = "10px";
-  img.style.marginTop = "6px";
-  img.style.display = "block";
-  let html = `<strong style="color:${color || "#ffd700"}">${escapeHtml(uname)}</strong>:`;
-  if (uname === username) {
-    html += ` <button class="deleteMsgBtn" style="margin-left:8px;">✕</button>`;
-  }
-  div.innerHTML = html;
-  div.appendChild(img);
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+    io.to(room).emit("systemMessage", `🟢 ${uname} joined ${room}`);
+    socket.emit("partyJoined", room);
+    sendPartyList();
+  });
 
-  const delBtn = div.querySelector(".deleteMsgBtn");
-  if (delBtn) {
-    delBtn.addEventListener("click", () => {
-      socket.emit("deleteMessage", { party: currentParty, id });
-    });
-  }
-});
+  // === Leave party ===
+  socket.on("leaveParty", ({ party }) => {
+    if (!party || !parties[party]) return;
+    if (socket.rooms.has(party)) socket.leave(party);
+    parties[party].sockets.delete(socket.id);
+    const user = users[socket.id];
+    const uname = user?.name || "Anonymous";
+    io.to(party).emit("systemMessage", `🔴 ${uname} left ${party}`);
 
-// Remove message when server confirms deletion
-socket.on("deleteMessage", ({ id }) => {
-  const msg = chat.querySelector(`.message[data-id="${id}"]`);
-  if (msg) msg.remove();
-});
+    if (parties[party].sockets.size === 0) delete parties[party];
+    sendPartyList();
+  });
 
-// --- System and user updates ---
-socket.on("systemMessage", (text) => systemLine(text));
+  // === Send message ===
+  socket.on("sendMessage", ({ message, party }) => {
+    const text = (message || "").trim();
+    if (!text) return;
+    const user = users[socket.id];
+    const uname = user?.name || "Anonymous";
+    const color = user?.color || "#ffd700";
 
-socket.on("updateUsers", (users) => {
-  userList.innerHTML = "";
-  users.forEach((u) => {
-    const li = document.createElement("li");
-    li.textContent = u;
-    userList.appendChild(li);
+    const msgObj = { id: generateId(), username: uname, message: text, color };
+
+    if (party && parties[party]) {
+      parties[party].messages.push(msgObj);
+      io.to(party).emit("chatMessage", msgObj);
+    } else {
+      socket.emit("systemMessage", "Join a party to chat with others!");
+    }
+  });
+
+  // === Send image ===
+  socket.on("sendImage", ({ image, party }) => {
+    const user = users[socket.id];
+    const uname = user?.name || "Anonymous";
+    const color = user?.color || "#ffd700";
+
+    const imgObj = { id: generateId(), username: uname, image, color };
+
+    if (party && parties[party]) {
+      parties[party].messages.push(imgObj);
+      io.to(party).emit("chatImage", imgObj);
+    } else {
+      socket.emit("systemMessage", "Join a party to send images!");
+    }
+  });
+
+  // === Delete message (only own) ===
+  socket.on("deleteMessage", ({ party, id }) => {
+    if (!party || !parties[party]) return;
+    const user = users[socket.id];
+    const uname = user?.name || "Anonymous";
+
+    // Find message and check ownership
+    const idx = parties[party].messages.findIndex(m => m.id === id && m.username === uname);
+    if (idx !== -1) {
+      parties[party].messages.splice(idx, 1);
+      io.to(party).emit("deleteMessage", { id });
+    }
+  });
+
+  // --- Typing indicator ---
+  socket.on("typing", ({ party, isTyping }) => {
+    const user = users[socket.id];
+    const uname = user?.name || "Anonymous";
+    if (!party || !parties[party]) return;
+    socket.to(party).emit("typing", { username: uname, isTyping, party });
+  });
+
+  // === Disconnect ===
+  socket.on("disconnect", () => {
+    const user = users[socket.id];
+    if (user) {
+      io.emit("systemMessage", `🔴 ${user.name} left the chat`);
+      delete users[socket.id];
+      io.emit("updateUsers", Object.values(users).map(u => u.name));
+    }
+
+    for (const [room, info] of Object.entries(parties)) {
+      if (info.sockets.has(socket.id)) {
+        info.sockets.delete(socket.id);
+        if (info.sockets.size === 0) delete parties[room];
+      }
+    }
+
+    sendPartyList();
   });
 });
 
-socket.on("updateParties", (list) => {
-  partiesList.innerHTML = "";
-  list.forEach((p) => {
-    const row = document.createElement("li");
-    row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
-    row.style.cursor = "pointer";
-    row.onclick = () => {
-      partyNameInput.value = p.name;
-      partyPasswordInput.value = "";
-      if (!p.isPrivate) socket.emit("joinParty", { name: p.name, password: "" });
-    };
-    partiesList.appendChild(row);
-  });
-});
-
-// --- Helpers ---
-function systemLine(text) {
-  const div = document.createElement("div");
-  div.classList.add("system");
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function toast(msg) { systemLine(msg); }
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));
-}
-
-// === Name Color Button Logic ===
-const changeColorContainer = document.getElementById("changeColorContainer");
-const changeColorBtn = document.getElementById("changeColorBtn");
-const nameColorPicker = document.getElementById("nameColorPicker");
-
-changeColorBtn.addEventListener("click", () => {
-  nameColorPicker.style.display = nameColorPicker.style.display === "block" ? "none" : "block";
-});
-
-let colorChangeTimer;
-nameColorPicker.addEventListener("input", (e) => {
-  const newColor = e.target.value;
-  savedColor = newColor;
-  localStorage.setItem("chatColor", newColor);
-  clearTimeout(colorChangeTimer);
-  colorChangeTimer = setTimeout(() => {
-    socket.emit("setUsername", { username, color: newColor });
-    systemLine(`✅ Name color changed!`);
-  }, 300);
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
