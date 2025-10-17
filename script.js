@@ -1,27 +1,9 @@
 // script.js
 const socket = io();
 
-// --- Handle image paste once ---
-document.addEventListener("paste", (e) => {
-  const items = e.clipboardData?.items;
-  if (!items) return;
-
-  for (const item of items) {
-    if (item.type.startsWith("image/")) {
-      const file = item.getAsFile();
-      const reader = new FileReader();
-      reader.onload = () => {
-        socket.emit("sendImage", {
-          image: reader.result,
-          party: currentParty,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-});
-
-let username = "";
+// --- Load saved username from localStorage ---
+let username = localStorage.getItem("chatUsername") || "";
+let savedColor = localStorage.getItem("chatColor") || "#ffd700";
 let currentParty = null;
 
 // DOM
@@ -51,7 +33,6 @@ const playSound = (file) => {
       src.buffer = audioBuf;
       src.connect(gain);
       gain.connect(ctx.destination);
-
       gain.gain.value = 0.40;
 
       const duration = audioBuf.duration * 0.35;
@@ -108,7 +89,6 @@ document.addEventListener("paste", (event) => {
 
           preview.appendChild(img);
           preview.appendChild(cancel);
-
           messageInput.parentNode.insertBefore(preview, messageInput);
         }
 
@@ -140,17 +120,34 @@ const unlockAudio = () => {
 
 window.addEventListener("click", unlockAudio, { once: true });
 
+// --- Username form submission ---
 usernameForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = (usernameInput.value || "").trim();
   const color = document.getElementById("usernameColor").value || "#ffd700";
   if (!name) return;
+
   username = name;
-  socket.emit("setUsername", { username, color }); 
+  savedColor = color;
+
+  // Save in localStorage
+  localStorage.setItem("chatUsername", username);
+  localStorage.setItem("chatColor", color);
+
+  socket.emit("setUsername", { username, color });
+
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
 });
 
+// --- If username is saved, auto-set it ---
+if (username) {
+  socket.emit("setUsername", { username, color: savedColor });
+  usernameForm.style.display = "none";
+  chatContainer.style.display = "block";
+}
+
+// --- Send message ---
 sendButton.addEventListener("click", () => {
   if (pastedImageData) {
     if (sendButton.disabled) return;
@@ -201,6 +198,7 @@ messageInput.addEventListener("keydown", (e) => {
   }
 });
 
+// --- Typing indicator ---
 socket.on("typing", ({ username, isTyping, party }) => {
   const indicator = document.getElementById("typingIndicator");
   if (!indicator || party !== currentParty) return;
@@ -212,6 +210,7 @@ socket.on("typing", ({ username, isTyping, party }) => {
   }
 });
 
+// --- Party buttons ---
 createPartyBtn.addEventListener("click", () => {
   const name = (partyNameInput.value || "").trim();
   const password = (partyPasswordInput.value || "").trim();
@@ -237,7 +236,7 @@ leavePartyBtn.addEventListener("click", () => {
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
 
-  // ✅ Auto-join the party on server
+  // Auto-join created party
   socket.emit("joinParty", { name: room, password: "" });
 });
 
@@ -248,6 +247,7 @@ socket.on("partyJoined", (room) => {
 
 socket.on("partyError", (msg) => alert(msg));
 
+// --- Chat messages ---
 socket.on("chatMessage", ({ username, message, color }) => {
   playSound("rec.mp3");
   const div = document.createElement("div");
@@ -276,6 +276,7 @@ socket.on("chatImage", ({ username, image, color }) => {
   chat.scrollTop = chat.scrollHeight;
 });
 
+// --- System and user updates ---
 socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
@@ -297,7 +298,7 @@ socket.on("updateParties", (list) => {
       partyNameInput.value = p.name;
       partyPasswordInput.value = "";
       if (!p.isPrivate) {
-        // ✅ Auto-join public party
+        // Auto-join public party
         socket.emit("joinParty", { name: p.name, password: "" });
       }
     };
@@ -305,7 +306,7 @@ socket.on("updateParties", (list) => {
   });
 });
 
-// helpers
+// --- Helpers ---
 function systemLine(text) {
   const div = document.createElement("div");
   div.classList.add("system");
