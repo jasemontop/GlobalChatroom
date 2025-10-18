@@ -120,6 +120,7 @@ usernameForm.addEventListener("submit", (e) => {
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
 
+  // Show color button inside chat
   const btnContainer = document.getElementById("changeColorContainer");
   if (btnContainer) btnContainer.style.display = "flex";
 });
@@ -217,61 +218,28 @@ socket.on("partyJoined", (room) => {
 
 socket.on("partyError", (msg) => alert(msg));
 
-// --- Chat messages with delete button ---
-socket.on("chatMessage", ({ username: msgUser, message, color, id }) => {
+// --- Chat messages ---
+socket.on("chatMessage", ({ username, message, color }) => {
   playSound("rec.mp3");
   const div = document.createElement("div");
   div.classList.add("message");
-  div.dataset.id = id; // unique message id
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: ${escapeHtml(message)}`;
-
-  // Add delete button if it’s your own message
-  if (msgUser === username) {
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "🗑";
-    delBtn.style.marginLeft = "8px";
-    delBtn.style.border = "none";
-    delBtn.style.background = "transparent";
-    delBtn.style.cursor = "pointer";
-    delBtn.onclick = () => {
-      socket.emit("deleteMessage", { id });
-      div.remove();
-    };
-    div.appendChild(delBtn);
-  }
-
+  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>: ${escapeHtml(message)}`;
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 });
 
-socket.on("chatImage", ({ username: imgUser, image, color, id }) => {
+socket.on("chatImage", ({ username, image, color }) => {
   playSound("rec.mp3");
   const div = document.createElement("div");
   div.classList.add("message");
-  div.dataset.id = id;
   const img = document.createElement("img");
   img.src = image;
   img.style.maxWidth = "200px";
   img.style.borderRadius = "10px";
   img.style.marginTop = "6px";
   img.style.display = "block";
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(imgUser)}</strong>:`;
+  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:`;
   div.appendChild(img);
-
-  if (imgUser === username) {
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "🗑";
-    delBtn.style.marginLeft = "8px";
-    delBtn.style.border = "none";
-    delBtn.style.background = "transparent";
-    delBtn.style.cursor = "pointer";
-    delBtn.onclick = () => {
-      socket.emit("deleteMessage", { id });
-      div.remove();
-    };
-    div.appendChild(delBtn);
-  }
-
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 });
@@ -317,7 +285,9 @@ function toast(msg) {
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
 }
 
 // === Name Color Button Logic ===
@@ -337,6 +307,7 @@ nameColorPicker.addEventListener("input", (e) => {
   savedColor = newColor;
   localStorage.setItem("chatColor", newColor);
 
+  // Delay emit so it doesn’t spam messages while dragging
   clearTimeout(colorChangeTimer);
   colorChangeTimer = setTimeout(() => {
     socket.emit("setUsername", { username, color: newColor });
