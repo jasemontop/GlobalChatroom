@@ -9,7 +9,6 @@
   --brand:#4caf50;
   --brand-2:#00bcd4;
   --accent:#7ef9a9;
-  --transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ===== PAGE ===== */
@@ -24,28 +23,24 @@ body {
   display:flex; align-items:center; justify-content:center;
   padding:24px;
   overflow:hidden;
-  transition: var(--transition);
 }
 
 #chat-container {
-  width: 1020px;
-  max-width: 98vw;
+  width: 1020px;       /* bigger */
+  max-width: 98vw;     /* responsive */
   background: rgba(27,31,36,.72);
   border: 1px solid rgba(255,255,255,.06);
   border-radius: 20px;
-  padding: 32px;
-  backdrop-filter: blur(12px);
+  padding: 32px;       /* more padding */
+  backdrop-filter: blur(10px);
   box-shadow:
     0 0 0 1px rgba(255,255,255,.02) inset,
     0 30px 80px rgba(0,0,0,.45),
-    0 0 50px rgba(0, 255, 170, .18);
-  animation: shellIn 0.8s cubic-bezier(0.4,0,0.2,1) both;
+    0 0 40px rgba(0, 255, 170, .15);
+  animation: shellIn .7s ease both;
 }
 
-@keyframes shellIn { 
-  0% {opacity:0; transform:translateY(24px) scale(0.97);} 
-  100% {opacity:1; transform:translateY(0) scale(1);}
-}
+@keyframes shellIn { from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;} }
 
 h1 {
   text-align:center;
@@ -53,13 +48,12 @@ h1 {
   letter-spacing:.4px;
   margin-bottom:14px;
   color:var(--brand);
-  text-shadow:0 0 14px rgba(76,175,80,.7);
-  animation:titleGlow 3s ease-in-out infinite alternate;
+  text-shadow:0 0 12px rgba(76,175,80,.7);
+  animation:titleGlow 2.6s ease-in-out infinite;
 }
 @keyframes titleGlow {
-  0%{ text-shadow: 0 0 8px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
-  50%{ text-shadow: 0 0 20px rgba(76,175,80,.95), 0 0 36px rgba(0,188,212,.2);}
-  100%{ text-shadow: 0 0 8px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
+  0%,100%{ text-shadow: 0 0 10px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
+  50%{ text-shadow: 0 0 18px rgba(76,175,80,.95), 0 0 30px rgba(0,188,212,.15);}
 }
 
 /* ===== CARDS ===== */
@@ -68,133 +62,127 @@ h1 {
   border: 1px solid rgba(255,255,255,.06);
   border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.35);
-  animation: pop .5s cubic-bezier(0.4,0,0.2,1) both;
+  box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  animation: pop .45s ease both;
 }
-@keyframes pop { from{opacity:0; transform: translateY(12px) scale(.96);} to{opacity:1; transform:none;} }
+@keyframes pop { from{opacity:0; transform: translateY(8px) scale(.98);} to{opacity:1; transform:none;} }
 
 .card h2, .card h3 {
   text-align:center;
   margin-bottom:10px;
   color:var(--accent);
   font-weight:600;
-  transition: var(--transition);
 }
 
-/* ===== FORM ===== */
+/* ===== FORM (USERNAME) ===== */
 #usernameForm {
   display:flex; flex-direction:column; align-items:center; gap:10px;
   margin: 8px auto 4px; max-width: 560px;
-  transition: var(--transition);
 }
 #usernameForm input {
   width:100%; padding:12px 14px; border-radius:10px;
   border:1px solid rgba(255,255,255,.08);
   background:#13161a; color:var(--text); font-size:1rem;
-  outline:none; transition: var(--transition);
+  outline:none; transition:.2s;
 }
 #usernameForm input:focus {
   border-color:rgba(126,249,169,.55);
-  box-shadow:0 0 0 6px rgba(126,249,169,.15);
+  box-shadow:0 0 0 4px rgba(126,249,169,.12);
 }
 #usernameForm button {
   padding:12px 16px; border:0; border-radius:10px; cursor:pointer;
   color:#00130a; font-weight:700;
   background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  box-shadow: 0 8px 28px rgba(0,255,170,.18);
-  transition: var(--transition);
+  box-shadow: 0 8px 26px rgba(0,255,170,.18);
+  transition:.25s;
 }
 #usernameForm button:hover {
-  transform:translateY(-2px) scale(1.03);
-  box-shadow:0 14px 36px rgba(0,255,170,.28);
+  transform:translateY(-1px) scale(1.02);
+  box-shadow:0 12px 32px rgba(0,255,170,.28);
 }
 .hint {
   color:var(--muted);
   font-size:.9rem;
   margin-top:8px;
   text-align:center;
-  transition: var(--transition);
 }
 
 /* ===== GRID ===== */
 .grid {
   display:grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr 300px; /* Make chat area wider */
   gap: 14px;
   margin-top: 12px;
-  transition: var(--transition);
 }
 
 /* ===== LEFT CHAT ===== */
-.left { display:flex; flex-direction:column; gap:12px; transition: var(--transition); }
+.left { display:flex; flex-direction:column; gap:12px; }
 
 .messages {
-  height:520px;
+  height:520px; /* slightly taller */
   overflow:auto; padding:12px;
   background:#111418;
   border:1px solid rgba(255,255,255,.05);
   border-radius:12px;
-  box-shadow:inset 0 0 16px rgba(0,0,0,.55);
+  box-shadow:inset 0 0 12px rgba(0,0,0,.55);
   scroll-behavior:smooth;
-  transition: var(--transition);
 }
-.messages::-webkit-scrollbar{ width:10px; border-radius:8px;}
+.messages::-webkit-scrollbar{ width:8px; }
 .messages::-webkit-scrollbar-thumb{
-  background:linear-gradient(180deg,var(--brand),var(--brand-2));
-  border-radius:10px;
-  transition: var(--transition);
+  background:linear-gradient(var(--brand),var(--brand-2));
+  border-radius:8px;
 }
 
 .message {
   background:#1d2228;
   border:1px solid rgba(255,255,255,.06);
-  padding:10px 12px;
-  border-radius:10px;
+  padding:8px 10px;
+  border-radius:8px;
   margin:6px 0;
-  line-height:1.4;
-  animation:msgIn .3s cubic-bezier(0.4,0,0.2,1) both;
+  line-height:1.35;
+  animation:msgIn .2s ease both;
   word-wrap:break-word;
-  transition: var(--transition);
 }
 .system {
   text-align:center;
   color:var(--muted);
   margin:6px 0;
   font-style:italic;
-  animation:msgIn .3s cubic-bezier(0.4,0,0.2,1) both;
+  animation:msgIn .2s ease both;
 }
+@keyframes msgIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
 
 /* Composer */
-.composer { display:flex; gap:10px; transition: var(--transition);}
+.composer { display:flex; gap:8px; }
 .composer input {
   flex:1;
-  padding:12px 14px;
+  padding:11px 12px;
   border-radius:10px;
   border:1px solid rgba(255,255,255,.08);
   background:#13161a;
   color:var(--text);
   outline:none;
-  transition: var(--transition);
+  transition:.2s;
 }
 .composer input:focus {
   border-color:rgba(0,188,212,.5);
-  box-shadow:0 0 0 6px rgba(0,188,212,.12);
+  box-shadow:0 0 0 4px rgba(0,188,212,.12);
 }
 .composer button {
-  min-width:120px;
-  padding:12px 14px;
+  min-width:110px;
+  padding:11px 12px;
   border-radius:10px;
   border:0;
   cursor:pointer;
   color:#00131a;
   font-weight:700;
   background:linear-gradient(135deg, var(--brand-2), var(--brand));
-  box-shadow:0 8px 28px rgba(0,188,212,.18);
-  transition: var(--transition);
+  box-shadow:0 8px 22px rgba(0,188,212,.18);
+  transition:.25s;
 }
 .composer button:hover {
-  transform:translateY(-2px) scale(1.03);
-  box-shadow:0 14px 36px rgba(0,188,212,.28);
+  transform:translateY(-1px) scale(1.02);
+  box-shadow:0 12px 30px rgba(0,188,212,.28);
 }
 
 /* ===== RIGHT SIDEBAR ===== */
@@ -202,54 +190,136 @@ h1 {
   background:#0f1216;
   border:1px solid rgba(255,255,255,.06);
   border-radius:12px;
-  padding:14px;
+  padding:12px;
   display:flex;
   flex-direction:column;
-  max-height:480px;
+  max-height:480px; /* same as chat */
   overflow-y:auto;
-  transition: var(--transition);
 }
 .right h3 {
-  margin-bottom:10px;
+  margin-bottom:8px;
   color:var(--accent);
   font-weight:600;
   text-align:center;
-  transition: var(--transition);
 }
 .users {
   list-style:none;
   padding:4px 2px;
 }
 .users li {
-  padding:10px 12px;
+  padding:8px 10px;
   margin:6px 0;
-  border-radius:10px;
+  border-radius:8px;
   background:#171b20;
   border:1px solid rgba(255,255,255,.06);
-  animation:msgIn .3s cubic-bezier(0.4,0,0.2,1) both;
+  animation:msgIn .2s ease both;
   word-wrap:break-word;
-  transition: var(--transition);
 }
 .users li:hover {
   background:#1f252b;
-  transform:translateY(-2px);
-  transition: var(--transition);
+  transform:translateY(-1px);
+  transition:.15s;
 }
 
-/* ===== PARTY CONTROLS ===== */
-.party-controls { display:flex; flex-direction:column; gap:10px; transition: var(--transition);}
-.party-controls input, .party-actions button { transition: var(--transition); }
-
-/* ===== Change Name Color ===== */
-#changeColorBtn, #nameColorPicker, #closeColorPicker {
-  transition: var(--transition);
+/* ===== PARTY CONTROLS (under composer) ===== */
+.party-controls {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
 }
-#changeColorBtn:hover { transform:translateY(-2px) scale(1.03); }
-#nameColorPicker:hover { transform:scale(1.05); }
-#closeColorPicker:hover { transform:translateY(-2px) scale(1.03); }
+.party-controls label {
+  font-size:.9rem;
+  color:var(--muted);
+}
+.party-controls input {
+  width:100%;
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#13161a;
+  color:var(--text);
+  outline:none;
+  transition:.2s;
+}
+.party-controls input:focus {
+  border-color:rgba(126,249,169,.4);
+  box-shadow:0 0 0 3px rgba(126,249,169,.1);
+}
+.party-actions {
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin-top:6px;
+}
+.party-actions button {
+  flex:1;
+  padding:10px 0;
+  border-radius:8px;
+  border:0;
+  cursor:pointer;
+  font-weight:600;
+  color:#00130a;
+  background:linear-gradient(135deg, var(--brand), var(--brand-2));
+  transition:.25s;
+  box-shadow:0 8px 22px rgba(0,188,212,.15);
+}
+.party-actions button:hover {
+  transform:translateY(-1px) scale(1.02);
+  box-shadow:0 12px 28px rgba(0,188,212,.25);
+}
 
-/* ===== Animations ===== */
-@keyframes msgIn {
-  0% {opacity:0; transform:translateY(12px);}
-  100% {opacity:1; transform:translateY(0);}
+/* ===== Change Name Color Button (In-Chat) ===== */
+#changeColorContainer {
+  display: none; /* Hidden until username is set */
+  margin-top: 12px;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+#changeColorBtn {
+  padding: 6px 14px;
+  background: #1b1f24;
+  color: #eee;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+#changeColorBtn:hover {
+  background: #2a2f36;
+  transform: translateY(-1px) scale(1.02);
+}
+#nameColorPicker {
+  display: none; /* Hidden by default */
+  width: 48px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+#nameColorPicker.visible {
+  display: inline-block;
+}
+#nameColorPicker:hover {
+  transform: scale(1.05);
+}
+#closeColorPicker {
+  display: none; /* Hidden by default */
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #2a2f36;
+  color: #eee;
+  font-weight: bold;
+  transition: background 0.2s, transform 0.2s;
+}
+#closeColorPicker:hover {
+  background: #3b414b;
+  transform: translateY(-1px) scale(1.02);
+}
+#nameColorPicker.visible + #closeColorPicker {
+  display: inline-block;
 }
