@@ -5,6 +5,10 @@ let username = localStorage.getItem("chatUsername") || "";
 let savedColor = localStorage.getItem("chatColor") || "#ffd700";
 let currentParty = null;
 
+// --- Load saved theme from localStorage ---
+let savedBgGradient = localStorage.getItem("chatBgGradient") || "linear-gradient(180deg, #0b0d10, #0d0f12)";
+let savedAccent = localStorage.getItem("chatAccentColor") || "#7ef9a9";
+
 // DOM
 const usernameForm = document.getElementById("usernameForm");
 const usernameInput = document.getElementById("usernameInput");
@@ -20,6 +24,53 @@ const partyPasswordInput = document.getElementById("partyPasswordInput");
 const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
 const leavePartyBtn = document.getElementById("leavePartyBtn");
+
+// --- Theme Pickers ---
+const themeContainer = document.createElement("div");
+themeContainer.id = "themeContainer";
+themeContainer.style.display = "flex";
+themeContainer.style.gap = "10px";
+themeContainer.style.alignItems = "center";
+themeContainer.style.justifyContent = "center";
+themeContainer.style.marginTop = "10px";
+
+// Background gradient picker
+const bgPicker = document.createElement("input");
+bgPicker.type = "color";
+bgPicker.title = "Pick background color";
+bgPicker.value = "#0d0f12";
+
+// Accent color picker
+const accentPicker = document.createElement("input");
+accentPicker.type = "color";
+accentPicker.title = "Pick accent color";
+accentPicker.value = savedAccent;
+
+// Append pickers to container
+themeContainer.appendChild(bgPicker);
+themeContainer.appendChild(accentPicker);
+
+// Append container below username color picker
+const changeColorContainer = document.getElementById("changeColorContainer");
+changeColorContainer.appendChild(themeContainer);
+
+// Apply saved theme on load
+document.documentElement.style.setProperty("--bg", savedBgGradient);
+document.documentElement.style.setProperty("--accent", savedAccent);
+
+// Update theme dynamically
+bgPicker.addEventListener("input", (e) => {
+  const val = e.target.value;
+  const gradient = `linear-gradient(180deg, ${val}, #0d0f12)`; // simple gradient
+  document.documentElement.style.setProperty("--bg", gradient);
+  localStorage.setItem("chatBgGradient", gradient);
+});
+
+accentPicker.addEventListener("input", (e) => {
+  const val = e.target.value;
+  document.documentElement.style.setProperty("--accent", val);
+  localStorage.setItem("chatAccentColor", val);
+});
 
 // --- Universal sound system ---
 const playSound = (file) => {
@@ -121,8 +172,7 @@ usernameForm.addEventListener("submit", (e) => {
   chatContainer.style.display = "block";
 
   // Show color button inside chat
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
+  if (changeColorContainer) changeColorContainer.style.display = "flex";
 });
 
 // --- If username is saved, auto-set it ---
@@ -130,8 +180,7 @@ if (username) {
   socket.emit("setUsername", { username, color: savedColor });
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
+  if (changeColorContainer) changeColorContainer.style.display = "flex";
 }
 
 // --- Send message ---
@@ -291,7 +340,6 @@ function escapeHtml(s) {
 }
 
 // === Name Color Button Logic ===
-const changeColorContainer = document.getElementById("changeColorContainer");
 const changeColorBtn = document.getElementById("changeColorBtn");
 const nameColorPicker = document.getElementById("nameColorPicker");
 
@@ -307,7 +355,6 @@ nameColorPicker.addEventListener("input", (e) => {
   savedColor = newColor;
   localStorage.setItem("chatColor", newColor);
 
-  // Delay emit so it doesn’t spam messages while dragging
   clearTimeout(colorChangeTimer);
   colorChangeTimer = setTimeout(() => {
     socket.emit("setUsername", { username, color: newColor });
