@@ -1,316 +1,325 @@
-const socket = io();
-
-// --- Load saved username from localStorage ---
-let username = localStorage.getItem("chatUsername") || "";
-let savedColor = localStorage.getItem("chatColor") || "#ffd700";
-let currentParty = null;
-
-// DOM
-const usernameForm = document.getElementById("usernameForm");
-const usernameInput = document.getElementById("usernameInput");
-const usernameColorInput = document.getElementById("usernameColor");
-const chatContainer = document.getElementById("chatContainer");
-const chat = document.getElementById("chat");
-const messageInput = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-const userList = document.getElementById("userList");
-const partiesList = document.getElementById("partiesList");
-const partyNameInput = document.getElementById("partyNameInput");
-const partyPasswordInput = document.getElementById("partyPasswordInput");
-const createPartyBtn = document.getElementById("createPartyBtn");
-const joinPartyBtn = document.getElementById("joinPartyBtn");
-const leavePartyBtn = document.getElementById("leavePartyBtn");
-
-// --- Universal sound system ---
-const playSound = (file) => {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  fetch(file)
-    .then(res => res.arrayBuffer())
-    .then(buf => ctx.decodeAudioData(buf))
-    .then(audioBuf => {
-      const src = ctx.createBufferSource();
-      const gain = ctx.createGain();
-      src.buffer = audioBuf;
-      src.connect(gain);
-      gain.connect(ctx.destination);
-      gain.gain.value = 0.40;
-      const duration = audioBuf.duration * 0.35;
-      const endTime = ctx.currentTime + duration;
-      gain.gain.setValueAtTime(0.35, endTime - 0.03);
-      gain.gain.linearRampToValueAtTime(0, endTime);
-      src.start(0, 0, duration);
-      src.stop(endTime);
-    })
-    .catch(err => console.warn("Sound error:", err));
-};
-
-// --- Paste image but send only on Enter/Send ---
-let pastedImageData = null;
-
-document.addEventListener("paste", (event) => {
-  const items = event.clipboardData?.items;
-  if (!items) return;
-  for (const item of items) {
-    if (item.type.startsWith("image/")) {
-      const file = item.getAsFile();
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        pastedImageData = e.target.result;
-        let preview = document.getElementById("imagePreview");
-        if (!preview) {
-          preview = document.createElement("div");
-          preview.id = "imagePreview";
-          preview.style.display = "flex";
-          preview.style.alignItems = "center";
-          preview.style.gap = "8px";
-          preview.style.margin = "6px 0";
-          const img = document.createElement("img");
-          img.style.maxWidth = "120px";
-          img.style.borderRadius = "8px";
-          img.alt = "Pasted preview";
-          const cancel = document.createElement("button");
-          cancel.textContent = "✕";
-          cancel.title = "Remove image";
-          cancel.style.padding = "6px 10px";
-          cancel.style.border = "0";
-          cancel.style.borderRadius = "8px";
-          cancel.style.cursor = "pointer";
-          cancel.style.background = "#2a2f36";
-          cancel.style.color = "#eee";
-          cancel.onclick = () => { preview.remove(); pastedImageData = null; };
-          preview.appendChild(img);
-          preview.appendChild(cancel);
-          messageInput.parentNode.insertBefore(preview, messageInput);
-        }
-        preview.querySelector("img").src = pastedImageData;
-      };
-      reader.readAsDataURL(file);
-      break;
-    }
-  }
-});
-
-// --- Unlock Chrome audio ---
-const sndSend = document.getElementById("sndSend");
-const sndRecv = document.getElementById("sndRecv");
-
-const unlockAudio = () => {
-  const silent = document.createElement("video");
-  silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA==";
-  silent.muted = true;
-  silent.play().catch(()=>{});
-  setTimeout(() => silent.remove(), 2000);
-  [sndSend, sndRecv].forEach(snd => { if (!snd) return; playSound("rec.mp3"); });
-  console.log("✅ Chrome audio fully unlocked");
-};
-
-window.addEventListener("click", unlockAudio, { once: true });
-
-// --- Username form submission ---
-usernameForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = (usernameInput.value || "").trim();
-  const color = usernameColorInput.value || "#ffd700";
-  if (!name) return;
-  username = name;
-  savedColor = color;
-  localStorage.setItem("chatUsername", username);
-  localStorage.setItem("chatColor", color);
-  socket.emit("setUsername", { username, color });
-  usernameForm.style.display = "none";
-  chatContainer.style.display = "block";
-
-  // Show color button inside chat
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
-});
-
-// --- If username is saved, auto-set it ---
-if (username) {
-  socket.emit("setUsername", { username, color: savedColor });
-  usernameForm.style.display = "none";
-  chatContainer.style.display = "block";
-  const btnContainer = document.getElementById("changeColorContainer");
-  if (btnContainer) btnContainer.style.display = "flex";
+/* ===== RESET ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg:#0d0f12; 
+  --panel:#1b1f24; 
+  --panel-2:#14181c;
+  --text:#e7edf3;
+  --muted:#a9b4c0;
+  --brand:#4caf50;
+  --brand-2:#00bcd4;
+  --accent:#7ef9a9;
 }
 
-// --- Send message ---
-sendButton.addEventListener("click", () => {
-  if (pastedImageData) {
-    if (sendButton.disabled) return;
-    sendButton.disabled = true;
-    socket.emit("sendImage", { image: pastedImageData, party: currentParty });
-    const preview = document.getElementById("imagePreview");
-    if (preview) preview.remove();
-    pastedImageData = null;
-    setTimeout(() => (sendButton.disabled = false), 600);
-    return;
-  }
-  const text = (messageInput.value || "").trim();
-  if (!text) return;
-  if (!username) return alert("Set a username first!");
-  socket.emit("sendMessage", { message: text, party: currentParty });
-  playSound("send.mp3");
-  messageInput.value = "";
-});
-
-messageInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendButton.click();
-  }
-});
-
-let typingTimeout;
-messageInput.addEventListener("input", () => {
-  if (!currentParty) return;
-  socket.emit("typing", { party: currentParty, isTyping: true });
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    socket.emit("typing", { party: currentParty, isTyping: false });
-  }, 1000);
-});
-
-// --- Typing indicator ---
-socket.on("typing", ({ username, isTyping, party }) => {
-  const indicator = document.getElementById("typingIndicator");
-  if (!indicator || party !== currentParty) return;
-  if (isTyping) {
-    indicator.style.display = "block";
-    indicator.textContent = `${username} is typing…`;
-  } else {
-    indicator.style.display = "none";
-  }
-});
-
-// --- Party buttons ---
-createPartyBtn.addEventListener("click", () => {
-  const name = (partyNameInput.value || "").trim();
-  const password = (partyPasswordInput.value || "").trim();
-  if (!name) return alert("Party name required.");
-  socket.emit("createParty", { name, password });
-});
-
-joinPartyBtn.addEventListener("click", () => {
-  const name = (partyNameInput.value || "").trim();
-  const password = (partyPasswordInput.value || "").trim();
-  if (!name) return alert("Enter a party name to join.");
-  socket.emit("joinParty", { name, password });
-});
-
-leavePartyBtn.addEventListener("click", () => {
-  if (!currentParty) return alert("You’re not in a party!");
-  socket.emit("leaveParty", { party: currentParty });
-  systemLine(`You left ${currentParty}`);
-  currentParty = null;
-});
-
-// --- Auto-join after creating a party ---
-socket.on("partyCreated", (room) => {
-  toast(`✅ Party "${room}" created`);
-  socket.emit("joinParty", { name: room, password: "" });
-});
-
-socket.on("partyJoined", (room) => {
-  currentParty = room;
-  systemLine(`Joined party: ${room}`);
-});
-
-socket.on("partyError", (msg) => alert(msg));
-
-// --- Chat messages ---
-socket.on("chatMessage", ({ username, message, color }) => {
-  playSound("rec.mp3");
-  const div = document.createElement("div");
-  div.classList.add("message");
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>: ${escapeHtml(message)}`;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-});
-
-socket.on("chatImage", ({ username, image, color }) => {
-  playSound("rec.mp3");
-  const div = document.createElement("div");
-  div.classList.add("message");
-  const img = document.createElement("img");
-  img.src = image;
-  img.style.maxWidth = "200px";
-  img.style.borderRadius = "10px";
-  img.style.marginTop = "6px";
-  img.style.display = "block";
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:`;
-  div.appendChild(img);
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-});
-
-// --- System and user updates ---
-socket.on("systemMessage", (text) => systemLine(text));
-
-socket.on("updateUsers", (users) => {
-  userList.innerHTML = "";
-  users.forEach((u) => {
-    const li = document.createElement("li");
-    li.textContent = u;
-    userList.appendChild(li);
-  });
-});
-
-socket.on("updateParties", (list) => {
-  partiesList.innerHTML = "";
-  list.forEach((p) => {
-    const row = document.createElement("li");
-    row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
-    row.style.cursor = "pointer";
-    row.onclick = () => {
-      partyNameInput.value = p.name;
-      partyPasswordInput.value = "";
-      if (!p.isPrivate) socket.emit("joinParty", { name: p.name, password: "" });
-    };
-    partiesList.appendChild(row);
-  });
-});
-
-// --- Helpers ---
-function systemLine(text) {
-  const div = document.createElement("div");
-  div.classList.add("system");
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+/* ===== PAGE ===== */
+body {
+  font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(0,188,212,.15), transparent 60%),
+    radial-gradient(800px 400px at 110% 10%, rgba(76,175,80,.18), transparent 60%),
+    linear-gradient(180deg, #0b0d10, #0d0f12);
+  color: var(--text);
+  height: 100vh;
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+  overflow:hidden;
 }
 
-function toast(msg) {
-  systemLine(msg);
+#chat-container {
+  width: 1020px;       /* bigger */
+  max-width: 98vw;     /* responsive */
+  background: rgba(27,31,36,.72);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 20px;
+  padding: 32px;       /* more padding */
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.02) inset,
+    0 30px 80px rgba(0,0,0,.45),
+    0 0 40px rgba(0, 255, 170, .15);
+  animation: shellIn .7s ease both;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));
+@keyframes shellIn { from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;} }
+
+h1 {
+  text-align:center;
+  font-weight:700;
+  letter-spacing:.4px;
+  margin-bottom:14px;
+  color:var(--brand);
+  text-shadow:0 0 12px rgba(76,175,80,.7);
+  animation:titleGlow 2.6s ease-in-out infinite;
+}
+@keyframes titleGlow {
+  0%,100%{ text-shadow: 0 0 10px rgba(76,175,80,.65), 0 0 0 rgba(0,0,0,0);}
+  50%{ text-shadow: 0 0 18px rgba(76,175,80,.95), 0 0 30px rgba(0,188,212,.15);}
 }
 
-// === Name Color Button Logic ===
-const changeColorContainer = document.getElementById("changeColorContainer");
-const changeColorBtn = document.getElementById("changeColorBtn");
-const nameColorPicker = document.getElementById("nameColorPicker");
+/* ===== CARDS ===== */
+.card {
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  animation: pop .45s ease both;
+}
+@keyframes pop { from{opacity:0; transform: translateY(8px) scale(.98);} to{opacity:1; transform:none;} }
 
-// Toggle picker visibility
-changeColorBtn.addEventListener("click", () => {
-  nameColorPicker.style.display = nameColorPicker.style.display === "block" ? "none" : "block";
-});
+.card h2, .card h3 {
+  text-align:center;
+  margin-bottom:10px;
+  color:var(--accent);
+  font-weight:600;
+}
 
-// Only send color after user finishes choosing
-let colorChangeTimer;
-nameColorPicker.addEventListener("input", (e) => {
-  const newColor = e.target.value;
-  savedColor = newColor;
-  localStorage.setItem("chatColor", newColor);
+/* ===== FORM (USERNAME) ===== */
+#usernameForm {
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  margin: 8px auto 4px; max-width: 560px;
+}
+#usernameForm input {
+  width:100%; padding:12px 14px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#13161a; color:var(--text); font-size:1rem;
+  outline:none; transition:.2s;
+}
+#usernameForm input:focus {
+  border-color:rgba(126,249,169,.55);
+  box-shadow:0 0 0 4px rgba(126,249,169,.12);
+}
+#usernameForm button {
+  padding:12px 16px; border:0; border-radius:10px; cursor:pointer;
+  color:#00130a; font-weight:700;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  box-shadow: 0 8px 26px rgba(0,255,170,.18);
+  transition:.25s;
+}
+#usernameForm button:hover {
+  transform:translateY(-1px) scale(1.02);
+  box-shadow:0 12px 32px rgba(0,255,170,.28);
+}
+.hint {
+  color:var(--muted);
+  font-size:.9rem;
+  margin-top:8px;
+  text-align:center;
+}
 
-  // Delay emit so it doesn’t spam messages while dragging
-  clearTimeout(colorChangeTimer);
-  colorChangeTimer = setTimeout(() => {
-    socket.emit("setUsername", { username, color: newColor });
-    systemLine(`✅ Name color changed!`);
-  }, 300);
-});
+/* ===== GRID ===== */
+.grid {
+  display:grid;
+  grid-template-columns: 1fr 300px; /* Make chat area wider */
+  gap: 14px;
+  margin-top: 12px;
+}
+
+/* ===== LEFT CHAT ===== */
+.left { display:flex; flex-direction:column; gap:12px; }
+
+.messages {
+  height:520px; /* slightly taller */
+  overflow:auto; padding:12px;
+  background:#111418;
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:12px;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.55);
+  scroll-behavior:smooth;
+}
+.messages::-webkit-scrollbar{ width:8px; }
+.messages::-webkit-scrollbar-thumb{
+  background:linear-gradient(var(--brand),var(--brand-2));
+  border-radius:8px;
+}
+
+.message {
+  background:#1d2228;
+  border:1px solid rgba(255,255,255,.06);
+  padding:8px 10px;
+  border-radius:8px;
+  margin:6px 0;
+  line-height:1.35;
+  animation:msgIn .2s ease both;
+  word-wrap:break-word;
+}
+.system {
+  text-align:center;
+  color:var(--muted);
+  margin:6px 0;
+  font-style:italic;
+  animation:msgIn .2s ease both;
+}
+@keyframes msgIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+/* Composer */
+.composer { display:flex; gap:8px; }
+.composer input {
+  flex:1;
+  padding:11px 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#13161a;
+  color:var(--text);
+  outline:none;
+  transition:.2s;
+}
+.composer input:focus {
+  border-color:rgba(0,188,212,.5);
+  box-shadow:0 0 0 4px rgba(0,188,212,.12);
+}
+.composer button {
+  min-width:110px;
+  padding:11px 12px;
+  border-radius:10px;
+  border:0;
+  cursor:pointer;
+  color:#00131a;
+  font-weight:700;
+  background:linear-gradient(135deg, var(--brand-2), var(--brand));
+  box-shadow:0 8px 22px rgba(0,188,212,.18);
+  transition:.25s;
+}
+.composer button:hover {
+  transform:translateY(-1px) scale(1.02);
+  box-shadow:0 12px 30px rgba(0,188,212,.28);
+}
+
+/* ===== RIGHT SIDEBAR ===== */
+.right {
+  background:#0f1216;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  max-height:480px; /* same as chat */
+  overflow-y:auto;
+}
+.right h3 {
+  margin-bottom:8px;
+  color:var(--accent);
+  font-weight:600;
+  text-align:center;
+}
+.users {
+  list-style:none;
+  padding:4px 2px;
+}
+.users li {
+  padding:8px 10px;
+  margin:6px 0;
+  border-radius:8px;
+  background:#171b20;
+  border:1px solid rgba(255,255,255,.06);
+  animation:msgIn .2s ease both;
+  word-wrap:break-word;
+}
+.users li:hover {
+  background:#1f252b;
+  transform:translateY(-1px);
+  transition:.15s;
+}
+
+/* ===== PARTY CONTROLS (under composer) ===== */
+.party-controls {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.party-controls label {
+  font-size:.9rem;
+  color:var(--muted);
+}
+.party-controls input {
+  width:100%;
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#13161a;
+  color:var(--text);
+  outline:none;
+  transition:.2s;
+}
+.party-controls input:focus {
+  border-color:rgba(126,249,169,.4);
+  box-shadow:0 0 0 3px rgba(126,249,169,.1);
+}
+.party-actions {
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin-top:6px;
+}
+.party-actions button {
+  flex:1;
+  padding:10px 0;
+  border-radius:8px;
+  border:0;
+  cursor:pointer;
+  font-weight:600;
+  color:#00130a;
+  background:linear-gradient(135deg, var(--brand), var(--brand-2));
+  transition:.25s;
+  box-shadow:0 8px 22px rgba(0,188,212,.15);
+}
+.party-actions button:hover {
+  transform:translateY(-1px) scale(1.02);
+  box-shadow:0 12px 28px rgba(0,188,212,.25);
+}
+
+/* ===== Change Name Color Button (In-Chat) ===== */
+#changeColorContainer {
+  display: none; /* Hidden until username is set */
+  margin-top: 12px;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+#changeColorBtn {
+  padding: 6px 14px;
+  background: #1b1f24;
+  color: #eee;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+#changeColorBtn:hover {
+  background: #2a2f36;
+  transform: translateY(-1px) scale(1.02);
+}
+#nameColorPicker {
+  display: none; /* Hidden by default */
+  width: 48px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+#nameColorPicker.visible {
+  display: inline-block;
+}
+#nameColorPicker:hover {
+  transform: scale(1.05);
+}
+#closeColorPicker {
+  display: none; /* Hidden by default */
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #2a2f36;
+  color: #eee;
+  font-weight: bold;
+  transition: background 0.2s, transform 0.2s;
+}
+#closeColorPicker:hover {
+  background: #3b414b;
+  transform: translateY(-1px) scale(1.02);
+}
+#nameColorPicker.visible + #closeColorPicker {
+  display: inline-block;
+}
