@@ -1,5 +1,6 @@
 /* ===== RESET ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 :root {
   --bg:#0d0f12; 
   --panel:#1b1f24; 
@@ -9,6 +10,10 @@
   --brand:#4caf50;
   --brand-2:#00bcd4;
   --accent:#7ef9a9;
+
+  /* Theme variables (dynamic) */
+  --bg-gradient: #0d0f12;
+  --accent-color: #7ef9a9;
 }
 
 /* ===== PAGE ===== */
@@ -17,7 +22,7 @@ body {
   background:
     radial-gradient(1200px 600px at 10% -10%, rgba(0,188,212,.15), transparent 60%),
     radial-gradient(800px 400px at 110% 10%, rgba(76,175,80,.18), transparent 60%),
-    linear-gradient(180deg, #0b0d10, #0d0f12);
+    linear-gradient(180deg, var(--bg-gradient), #0d0f12);
   color: var(--text);
   height: 100vh;
   display:flex; align-items:center; justify-content:center;
@@ -39,7 +44,6 @@ body {
     0 30px 80px rgba(0,0,0,.45),
     0 0 40px rgba(0, 255, 170, .15);
   animation: shellIn .7s ease both;
-  /* new subtle hover pulse */
   transition: transform .3s ease, box-shadow .3s ease;
 }
 #chat-container:hover {
@@ -126,7 +130,7 @@ h1 {
 /* ===== GRID ===== */
 .grid {
   display:grid;
-  grid-template-columns: 1fr 300px; /* Make chat area wider */
+  grid-template-columns: 1fr 300px;
   gap: 14px;
   margin-top: 12px;
 }
@@ -135,7 +139,7 @@ h1 {
 .left { display:flex; flex-direction:column; gap:12px; }
 
 .messages {
-  height:520px; /* slightly taller */
+  height:520px;
   overflow:auto; padding:12px;
   background:#111418;
   border:1px solid rgba(255,255,255,.05);
@@ -149,7 +153,6 @@ h1 {
   border-radius:8px;
 }
 
-/* Message animations and hover */
 .message {
   background:#1d2228;
   border:1px solid rgba(255,255,255,.06);
@@ -216,7 +219,7 @@ h1 {
   padding:12px;
   display:flex;
   flex-direction:column;
-  max-height:480px; /* same as chat */
+  max-height:480px;
   overflow-y:auto;
 }
 .right h3 {
@@ -229,7 +232,6 @@ h1 {
   list-style:none;
   padding:4px 2px;
 }
-/* user hover */
 .users li {
   padding:8px 10px;
   margin:6px 0;
@@ -245,7 +247,7 @@ h1 {
   transform:translateY(-1px) scale(1.02);
 }
 
-/* ===== PARTY CONTROLS (under composer) ===== */
+/* ===== PARTY CONTROLS ===== */
 .party-controls {
   display:flex;
   flex-direction:column;
@@ -292,9 +294,9 @@ h1 {
   box-shadow:0 12px 28px rgba(0,188,212,.25);
 }
 
-/* ===== Change Name Color Button (In-Chat) ===== */
+/* ===== Change Name Color Button ===== */
 #changeColorContainer {
-  display: none; /* Hidden until username is set */
+  display: none;
   margin-top: 12px;
   align-items: center;
   gap: 10px;
@@ -315,7 +317,7 @@ h1 {
   transform: translateY(-1px) scale(1.03);
 }
 #nameColorPicker {
-  display: none; /* Hidden by default */
+  display: none;
   width: 48px;
   height: 36px;
   border: none;
@@ -330,7 +332,7 @@ h1 {
   transform: scale(1.06);
 }
 #closeColorPicker {
-  display: none; /* Hidden by default */
+  display: none;
   padding: 4px 10px;
   border: none;
   border-radius: 6px;
@@ -346,4 +348,23 @@ h1 {
 }
 #nameColorPicker.visible + #closeColorPicker {
   display: inline-block;
+}
+
+/* ===== NEW: THEME PICKER ===== */
+#themeContainer {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 10px;
+}
+#themeContainer input[type="color"] {
+  width: 48px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: transform .2s;
+}
+#themeContainer input[type="color"]:hover {
+  transform: scale(1.06);
 }
