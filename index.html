@@ -25,6 +25,14 @@
       <input type="color" id="nameColorPicker" style="display:none;" />
     </div>
 
+    <!-- THEME PICKER -->
+    <div id="themeContainer">
+      <label for="bgThemePicker">Background:</label>
+      <input type="color" id="bgThemePicker" value="#0d0f12" title="Pick background color" />
+      <label for="accentThemePicker">Accent:</label>
+      <input type="color" id="accentThemePicker" value="#7ef9a9" title="Pick accent color" />
+    </div>
+
     <!-- CHAT + SIDEBAR -->
     <div id="chatContainer" class="card grid" style="display:none;">
       <div class="left">
@@ -74,6 +82,25 @@
     const input = document.getElementById('messageInput');
     const send = document.getElementById('sendButton');
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
+
+    // Theme color pickers
+    const bgPicker = document.getElementById('bgThemePicker');
+    const accentPicker = document.getElementById('accentThemePicker');
+
+    bgPicker.addEventListener('input', (e) => {
+      document.documentElement.style.setProperty('--bg-gradient', e.target.value);
+      localStorage.setItem('chatBg', e.target.value);
+    });
+    accentPicker.addEventListener('input', (e) => {
+      document.documentElement.style.setProperty('--accent-color', e.target.value);
+      localStorage.setItem('chatAccent', e.target.value);
+    });
+
+    // Load saved theme
+    const savedBg = localStorage.getItem('chatBg');
+    const savedAccent = localStorage.getItem('chatAccent');
+    if(savedBg) { document.documentElement.style.setProperty('--bg-gradient', savedBg); bgPicker.value = savedBg; }
+    if(savedAccent) { document.documentElement.style.setProperty('--accent-color', savedAccent); accentPicker.value = savedAccent; }
   </script>
 
   <!-- Chat sounds -->
