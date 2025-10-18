@@ -73,7 +73,7 @@ document.addEventListener("paste", (event) => {
           img.alt = "Pasted preview";
 
           const cancel = document.createElement("button");
-          cancel.textContent = "✕";
+          cancel.innerHTML = "✕";
           cancel.title = "Remove image";
           cancel.style.padding = "6px 10px";
           cancel.style.border = "0";
@@ -210,8 +210,8 @@ socket.on("partyJoined", (room) => {
 });
 socket.on("partyError", (msg) => alert(msg));
 
-// --- Custom delete confirmation ---
-function showDeleteConfirm(id) {
+// --- Delete confirmation modal ---
+function showDeleteConfirm(msgDiv) {
   const overlay = document.createElement("div");
   overlay.style.position = "fixed";
   overlay.style.top = "0";
@@ -258,11 +258,13 @@ function showDeleteConfirm(id) {
   delBtn.style.border = "none";
   delBtn.style.borderRadius = "8px";
   delBtn.style.cursor = "pointer";
-  delBtn.style.background = "#ff5555";
+  delBtn.style.background = "linear-gradient(135deg, #4caf50, #00bcd4)";
   delBtn.style.color = "#fff";
+  delBtn.style.fontWeight = "600";
   delBtn.onclick = () => {
-    socket.emit("deleteMessage", { id });
+    msgDiv.remove();
     overlay.remove();
+    // optionally notify server: socket.emit("deleteMessage", { id: msgDiv.dataset.id });
   };
 
   btnContainer.appendChild(cancelBtn);
@@ -272,22 +274,20 @@ function showDeleteConfirm(id) {
   document.body.appendChild(overlay);
 }
 
-// --- Chat messages ---
+// --- Append messages ---
 function appendMessage({ username: msgUser, message, color, id }) {
   playSound("rec.mp3");
   const div = document.createElement("div");
   div.classList.add("message");
   div.dataset.id = id;
   div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(msgUser)}</strong>: ${escapeHtml(message)}`;
-
   if (msgUser === username) {
     const delBtn = document.createElement("button");
     delBtn.textContent = "🗑";
     delBtn.classList.add("delete-btn");
-    delBtn.onclick = () => showDeleteConfirm(id);
+    delBtn.onclick = () => showDeleteConfirm(div);
     div.appendChild(delBtn);
   }
-
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -312,7 +312,7 @@ function appendImage({ username: imgUser, image, color, id }) {
     const delBtn = document.createElement("button");
     delBtn.textContent = "🗑";
     delBtn.classList.add("delete-btn");
-    delBtn.onclick = () => showDeleteConfirm(id);
+    delBtn.onclick = () => showDeleteConfirm(div);
     div.appendChild(delBtn);
   }
 
@@ -327,7 +327,7 @@ socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
   userList.innerHTML = "";
-  users.forEach((u) => {
+  users.forEach(u => {
     const li = document.createElement("li");
     li.textContent = u;
     userList.appendChild(li);
@@ -336,43 +336,9 @@ socket.on("updateUsers", (users) => {
 
 socket.on("updateParties", (list) => {
   partiesList.innerHTML = "";
-  list.forEach((p) => {
+  list.forEach(p => {
     const row = document.createElement("li");
     row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
     row.style.cursor = "pointer";
     row.onclick = () => {
       partyNameInput.value = p.name;
-      partyPasswordInput.value = "";
-      if (!p.isPrivate) socket.emit("joinParty", { name: p.name, password: "" });
-    };
-    partiesList.appendChild(row);
-  });
-});
-
-// --- Helpers ---
-function systemLine(text) {
-  const div = document.createElement("div");
-  div.classList.add("system");
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function toast(msg) { systemLine(msg); }
-function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-
-// --- Name Color ---
-changeColorBtn.addEventListener("click", () => {
-  nameColorPicker.style.display = nameColorPicker.style.display === "block" ? "none" : "block";
-});
-let colorChangeTimer;
-nameColorPicker.addEventListener("input", (e) => {
-  const newColor = e.target.value;
-  savedColor = newColor;
-  localStorage.setItem("chatColor", newColor);
-  clearTimeout(colorChangeTimer);
-  colorChangeTimer = setTimeout(() => {
-    socket.emit("setUsername", { username, color: newColor });
-    systemLine(`✅ Name color changed!`);
-  }, 300);
-});
