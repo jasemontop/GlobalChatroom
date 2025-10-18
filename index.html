@@ -19,21 +19,18 @@
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
 
-    <!-- CHANGE NAME COLOR BUTTON -->
+    <!-- CHANGE NAME COLOR BUTTON (HIDDEN UNTIL USER SETS NAME) -->
     <div id="changeColorContainer" style="display:none; margin:10px 0;">
       <button id="changeColorBtn" type="button">Change Name Color</button>
       <input type="color" id="nameColorPicker" style="display:none;" />
     </div>
 
-    <!-- THEME SELECTOR -->
-    <div id="themeSelectorContainer" style="margin:10px 0; display:flex; gap:10px; justify-content:center;">
-      <button id="themeBtn" type="button">Choose Theme</button>
-      <div id="themeOptions" style="display:none; flex-wrap:wrap; gap:8px; justify-content:center;">
-        <button class="themeOption" data-bg="#0d0f12" data-panel="#1b1f24" data-panel2="#14181c" data-accent="#4caf50">Space</button>
-        <button class="themeOption" data-bg="#ffe6f0" data-panel="#ffb3d1" data-panel2="#ff99c2" data-accent="#ff33aa">Bubblegum</button>
-        <button class="themeOption" data-bg="#f5f5f5" data-panel="#e0e0e0" data-panel2="#cfcfcf" data-accent="#3f51b5">Silver</button>
-        <button class="themeOption" data-bg="#000000" data-panel="#111111" data-panel2="#222222" data-accent="#ff9800">Dark Orange</button>
-      </div>
+    <!-- THEME PICKER -->
+    <div id="themeContainer">
+      <label for="bgThemePicker">Background:</label>
+      <input type="color" id="bgThemePicker" value="#0d0f12" title="Pick background color" />
+      <label for="accentThemePicker">Accent:</label>
+      <input type="color" id="accentThemePicker" value="#7ef9a9" title="Pick accent color" />
     </div>
 
     <!-- CHAT + SIDEBAR -->
@@ -86,48 +83,30 @@
     const send = document.getElementById('sendButton');
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
 
-    // Theme button toggle
-    const themeBtn = document.getElementById('themeBtn');
-    const themeOptions = document.getElementById('themeOptions');
-    themeBtn.addEventListener('click', () => {
-      themeOptions.style.display = themeOptions.style.display === 'flex' ? 'none' : 'flex';
+    // Theme color pickers
+    const bgPicker = document.getElementById('bgThemePicker');
+    const accentPicker = document.getElementById('accentThemePicker');
+
+    bgPicker.addEventListener('input', (e) => {
+      document.documentElement.style.setProperty('--bg-gradient', e.target.value);
+      localStorage.setItem('chatBg', e.target.value);
     });
-
-    // Apply theme
-    const themeButtons = document.querySelectorAll('.themeOption');
-    themeButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const bg = btn.dataset.bg;
-        const panel = btn.dataset.panel;
-        const panel2 = btn.dataset.panel2;
-        const accent = btn.dataset.accent;
-
-        document.documentElement.style.setProperty('--bg', bg);
-        document.documentElement.style.setProperty('--panel', panel);
-        document.documentElement.style.setProperty('--panel-2', panel2);
-        document.documentElement.style.setProperty('--accent', accent);
-
-        // Save selection
-        localStorage.setItem('themeBg', bg);
-        localStorage.setItem('themePanel', panel);
-        localStorage.setItem('themePanel2', panel2);
-        localStorage.setItem('themeAccent', accent);
-      });
+    accentPicker.addEventListener('input', (e) => {
+      document.documentElement.style.setProperty('--accent-color', e.target.value);
+      localStorage.setItem('chatAccent', e.target.value);
     });
 
     // Load saved theme
-    const savedBg = localStorage.getItem('themeBg');
-    const savedPanel = localStorage.getItem('themePanel');
-    const savedPanel2 = localStorage.getItem('themePanel2');
-    const savedAccent = localStorage.getItem('themeAccent');
-
-    if(savedBg) document.documentElement.style.setProperty('--bg', savedBg);
-    if(savedPanel) document.documentElement.style.setProperty('--panel', savedPanel);
-    if(savedPanel2) document.documentElement.style.setProperty('--panel-2', savedPanel2);
-    if(savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
+    const savedBg = localStorage.getItem('chatBg');
+    const savedAccent = localStorage.getItem('chatAccent');
+    if(savedBg) { document.documentElement.style.setProperty('--bg-gradient', savedBg); bgPicker.value = savedBg; }
+    if(savedAccent) { document.documentElement.style.setProperty('--accent-color', savedAccent); accentPicker.value = savedAccent; }
   </script>
 
   <!-- Chat sounds -->
+
+  <!-- Silent unlock video -->
   <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
+
 </body>
 </html>
