@@ -324,3 +324,61 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
+
+// ===== INVITE SYSTEM =====
+
+// Example online users (replace this with your actual user list)
+const onlineMembers = ["Jasem", "Seemo", "Lina", "Alex"];
+
+// Render members
+const memberList = document.getElementById("memberList");
+const currentUser = localStorage.getItem("username") || "You";
+
+onlineMembers.forEach(name => {
+  if (name !== currentUser) {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span>${name}</span>
+      <button class="invite-btn" data-user="${name}">Invite</button>
+    `;
+    memberList.appendChild(li);
+  }
+});
+
+// Handle invites
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("invite-btn")) {
+    const targetUser = e.target.dataset.user;
+    sendInvite(targetUser);
+  }
+});
+
+const invitePopup = document.getElementById("invitePopup");
+const inviteText = document.getElementById("inviteText");
+const acceptBtn = document.getElementById("acceptInvite");
+const declineBtn = document.getElementById("declineInvite");
+
+// Simulated function to send an invite
+function sendInvite(targetUser) {
+  // In a real app, you’d send this to your server using WebSockets
+  console.log(`${currentUser} invited ${targetUser} to their party.`);
+  receiveInvite(currentUser); // simulate the other person receiving it
+}
+
+// Show popup when you get an invite
+function receiveInvite(fromUser) {
+  inviteText.textContent = `📨 ${fromUser} invited you to join their party!`;
+  invitePopup.classList.remove("hidden");
+}
+
+// Accept or decline invite
+acceptBtn.addEventListener("click", () => {
+  invitePopup.classList.add("hidden");
+  console.log(`${currentUser} accepted the invite.`);
+  // Here you could call joinParty(fromUser) or whatever your join logic is
+});
+
+declineBtn.addEventListener("click", () => {
+  invitePopup.classList.add("hidden");
+  console.log(`${currentUser} declined the invite.`);
+});
