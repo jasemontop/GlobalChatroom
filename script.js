@@ -324,3 +324,47 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
+
+// ===== PARTY INVITE FEATURE =====
+
+// DOM
+const invitePopup = document.getElementById("invitePopup");
+const inviteText = document.getElementById("inviteText");
+const acceptBtn = document.getElementById("acceptInvite");
+const declineBtn = document.getElementById("declineInvite");
+
+// --- Send invite when clicking a username ---
+userList.addEventListener("click", (e) => {
+  const li = e.target.closest("li");
+  if (!li) return;
+
+  const targetUser = li.textContent.trim();
+  if (targetUser === username) return; // can't invite self
+
+  const confirmInvite = confirm(`Invite ${targetUser} to your party?`);
+  if (!confirmInvite) return;
+
+  socket.emit("sendInvite", { targetUsername: targetUser });
+  toast(`📨 Invite sent to ${targetUser}`);
+});
+
+// --- Receive invite ---
+socket.on("receiveInvite", ({ from }) => {
+  inviteText.textContent = `📩 ${from} invited you to join their party!`;
+  invitePopup.classList.remove("hidden");
+
+  // Accept
+  acceptBtn.onclick = () => {
+    invitePopup.classList.add("hidden");
+    // Auto-join their current party (prompt user for party name if needed)
+    const partyName = prompt(`Enter the party name of ${from} to join:`) || "";
+    if (!partyName) return;
+    socket.emit("joinParty", { name: partyName, password: "" });
+  };
+
+  // Decline
+  declineBtn.onclick = () => {
+    invitePopup.classList.add("hidden");
+    toast(`❌ You declined ${from}'s invite`);
+  };
+});
