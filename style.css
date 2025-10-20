@@ -451,6 +451,11 @@ h1 {
   box-shadow: 0 0 12px currentColor;
 }
 
-html {
-  zoom: 0.5;
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  transform: scale(0.5);
+  transform-origin: top left;
 }
