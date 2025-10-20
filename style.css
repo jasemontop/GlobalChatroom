@@ -457,3 +457,8 @@ body {
   transform-origin: top left; /* keeps content aligned at top-left */
   width: 200%; /* compensates for the scaling */
 }
+
+/* ===== INCREASE ALL TEXT SIZE ===== */
+body {
+  font-size: 1.4em;
+}
