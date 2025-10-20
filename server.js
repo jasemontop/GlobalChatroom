@@ -32,6 +32,22 @@ socket.on("setUsername", ({ username, color }) => {
   io.emit("systemMessage", `🟢 ${clean} joined the chat`);
   io.emit("updateUsers", Object.values(users).map(u => u.name));
   sendPartyList();
+
+  // === Party Invite ===
+socket.on("sendInvite", ({ targetUsername }) => {
+  const sender = users[socket.id]?.name || "Anonymous";
+
+  // Find the target socket ID
+  const targetSocketId = Object.entries(users)
+    .find(([id, u]) => u.name === targetUsername)?.[0];
+
+  if (!targetSocketId) {
+    socket.emit("systemMessage", `❌ User ${targetUsername} not found or offline.`);
+    return;
+  }
+
+  // Send the invite to the target user
+  io.to(targetSocketId).emit("receiveInvite", { from: sender });
 });
 
 
