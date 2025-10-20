@@ -368,3 +368,61 @@ h1 {
 #themeContainer input[type="color"]:hover {
   transform: scale(1.06);
 }
+
+/* ===== THEME PICKER STYLES ===== */
+#themeContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  padding: 10px 14px;
+  border-radius: 14px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+  margin: 12px 0;
+  width: fit-content;
+  transition: all 0.3s ease;
+}
+
+#themeContainer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(255,255,255,0.05);
+}
+
+#themeContainer label {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+}
+
+/* Custom color input */
+#themeContainer input[type="color"] {
+  appearance: none;
+  background: none;
+  border: 2px solid var(--muted);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+#themeContainer input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+#themeContainer input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+#themeContainer input[type="color"]:hover {
+  border-color: var(--text);
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(255,255,255,0.1);
+}
+
+#themeContainer input[type="color"]:active {
+  transform: scale(0.95);
+}
