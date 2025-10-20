@@ -426,3 +426,27 @@ h1 {
 #themeContainer input[type="color"]:active {
   transform: scale(0.95);
 }
+
+/* ===== BACKGROUND COLOR BUTTON GLOW ===== */
+#bgThemePicker {
+  appearance: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 10px;
+  border: 2px solid var(--muted);
+  background: none;
+  cursor: pointer;
+  transition: 0.25s ease;
+  box-shadow: 0 0 8px var(--bg-gradient);
+}
+
+#bgThemePicker::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
+
+#bgThemePicker:hover {
+  transform: scale(1.1);
+  border-color: var(--text);
+  box-shadow: 0 0 12px currentColor;
+}
