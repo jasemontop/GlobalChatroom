@@ -457,5 +457,5 @@ body {
   align-items: center;
   min-height: 100vh;
   transform: scale(0.5);
-  transform-origin: top left;
+  transform-origin: center;
 }
