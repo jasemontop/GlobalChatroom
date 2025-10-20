@@ -1,3 +1,4 @@
+// script.js
 const socket = io();
 
 // --- Load saved username from localStorage ---
@@ -5,14 +6,9 @@ let username = localStorage.getItem("chatUsername") || "";
 let savedColor = localStorage.getItem("chatColor") || "#ffd700";
 let currentParty = null;
 
-// --- Load saved theme from localStorage ---
-let savedBgGradient = localStorage.getItem("chatBgGradient") || "linear-gradient(180deg, #0b0d10, #0d0f12)";
-let savedAccent = localStorage.getItem("chatAccentColor") || "#7ef9a9";
-
 // DOM
 const usernameForm = document.getElementById("usernameForm");
 const usernameInput = document.getElementById("usernameInput");
-const usernameColorInput = document.getElementById("usernameColor");
 const chatContainer = document.getElementById("chatContainer");
 const chat = document.getElementById("chat");
 const messageInput = document.getElementById("messageInput");
@@ -24,53 +20,6 @@ const partyPasswordInput = document.getElementById("partyPasswordInput");
 const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
 const leavePartyBtn = document.getElementById("leavePartyBtn");
-
-// --- Theme Pickers ---
-const themeContainer = document.createElement("div");
-themeContainer.id = "themeContainer";
-themeContainer.style.display = "flex";
-themeContainer.style.gap = "10px";
-themeContainer.style.alignItems = "center";
-themeContainer.style.justifyContent = "center";
-themeContainer.style.marginTop = "10px";
-
-// Background gradient picker
-const bgPicker = document.createElement("input");
-bgPicker.type = "color";
-bgPicker.title = "Pick background color";
-bgPicker.value = "#0d0f12";
-
-// Accent color picker
-const accentPicker = document.createElement("input");
-accentPicker.type = "color";
-accentPicker.title = "Pick accent color";
-accentPicker.value = savedAccent;
-
-// Append pickers to container
-themeContainer.appendChild(bgPicker);
-themeContainer.appendChild(accentPicker);
-
-// Append container below username color picker
-const changeColorContainer = document.getElementById("changeColorContainer");
-changeColorContainer.appendChild(themeContainer);
-
-// Apply saved theme on load
-document.documentElement.style.setProperty("--bg", savedBgGradient);
-document.documentElement.style.setProperty("--accent", savedAccent);
-
-// Update theme dynamically
-bgPicker.addEventListener("input", (e) => {
-  const val = e.target.value;
-  const gradient = `linear-gradient(180deg, ${val}, #0d0f12)`; // simple gradient
-  document.documentElement.style.setProperty("--bg", gradient);
-  localStorage.setItem("chatBgGradient", gradient);
-});
-
-accentPicker.addEventListener("input", (e) => {
-  const val = e.target.value;
-  document.documentElement.style.setProperty("--accent", val);
-  localStorage.setItem("chatAccentColor", val);
-});
 
 // --- Universal sound system ---
 const playSound = (file) => {
@@ -85,10 +34,13 @@ const playSound = (file) => {
       src.connect(gain);
       gain.connect(ctx.destination);
       gain.gain.value = 0.40;
+
       const duration = audioBuf.duration * 0.35;
       const endTime = ctx.currentTime + duration;
+
       gain.gain.setValueAtTime(0.35, endTime - 0.03);
       gain.gain.linearRampToValueAtTime(0, endTime);
+
       src.start(0, 0, duration);
       src.stop(endTime);
     })
@@ -101,12 +53,14 @@ let pastedImageData = null;
 document.addEventListener("paste", (event) => {
   const items = event.clipboardData?.items;
   if (!items) return;
+
   for (const item of items) {
     if (item.type.startsWith("image/")) {
       const file = item.getAsFile();
       const reader = new FileReader();
       reader.onload = (e) => {
         pastedImageData = e.target.result;
+
         let preview = document.getElementById("imagePreview");
         if (!preview) {
           preview = document.createElement("div");
@@ -115,10 +69,13 @@ document.addEventListener("paste", (event) => {
           preview.style.alignItems = "center";
           preview.style.gap = "8px";
           preview.style.margin = "6px 0";
+
           const img = document.createElement("img");
           img.style.maxWidth = "120px";
           img.style.borderRadius = "8px";
+          img.style.display = "block";
           img.alt = "Pasted preview";
+
           const cancel = document.createElement("button");
           cancel.textContent = "✕";
           cancel.title = "Remove image";
@@ -129,10 +86,12 @@ document.addEventListener("paste", (event) => {
           cancel.style.background = "#2a2f36";
           cancel.style.color = "#eee";
           cancel.onclick = () => { preview.remove(); pastedImageData = null; };
+
           preview.appendChild(img);
           preview.appendChild(cancel);
           messageInput.parentNode.insertBefore(preview, messageInput);
         }
+
         preview.querySelector("img").src = pastedImageData;
       };
       reader.readAsDataURL(file);
@@ -151,7 +110,11 @@ const unlockAudio = () => {
   silent.muted = true;
   silent.play().catch(()=>{});
   setTimeout(() => silent.remove(), 2000);
-  [sndSend, sndRecv].forEach(snd => { if (!snd) return; playSound("rec.mp3"); });
+
+  [sndSend, sndRecv].forEach(snd => {
+    if (!snd) return;
+    playSound("rec.mp3");
+  });
   console.log("✅ Chrome audio fully unlocked");
 };
 
@@ -161,18 +124,20 @@ window.addEventListener("click", unlockAudio, { once: true });
 usernameForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = (usernameInput.value || "").trim();
-  const color = usernameColorInput.value || "#ffd700";
+  const color = document.getElementById("usernameColor").value || "#ffd700";
   if (!name) return;
+
   username = name;
   savedColor = color;
+
+  // Save in localStorage
   localStorage.setItem("chatUsername", username);
   localStorage.setItem("chatColor", color);
+
   socket.emit("setUsername", { username, color });
+
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
-
-  // Show color button inside chat
-  if (changeColorContainer) changeColorContainer.style.display = "flex";
 });
 
 // --- If username is saved, auto-set it ---
@@ -180,7 +145,6 @@ if (username) {
   socket.emit("setUsername", { username, color: savedColor });
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
-  if (changeColorContainer) changeColorContainer.style.display = "flex";
 }
 
 // --- Send message ---
@@ -188,16 +152,21 @@ sendButton.addEventListener("click", () => {
   if (pastedImageData) {
     if (sendButton.disabled) return;
     sendButton.disabled = true;
+
     socket.emit("sendImage", { image: pastedImageData, party: currentParty });
+
     const preview = document.getElementById("imagePreview");
     if (preview) preview.remove();
     pastedImageData = null;
+
     setTimeout(() => (sendButton.disabled = false), 600);
     return;
   }
+
   const text = (messageInput.value || "").trim();
   if (!text) return;
   if (!username) return alert("Set a username first!");
+
   socket.emit("sendMessage", { message: text, party: currentParty });
   playSound("send.mp3");
   messageInput.value = "";
@@ -218,6 +187,15 @@ messageInput.addEventListener("input", () => {
   typingTimeout = setTimeout(() => {
     socket.emit("typing", { party: currentParty, isTyping: false });
   }, 1000);
+});
+
+messageInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) return;
+    if (messageInput.value.trim() === "") return;
+    sendButton.click();
+  }
 });
 
 // --- Typing indicator ---
@@ -257,6 +235,8 @@ leavePartyBtn.addEventListener("click", () => {
 // --- Auto-join after creating a party ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
+
+  // Auto-join created party
   socket.emit("joinParty", { name: room, password: "" });
 });
 
@@ -281,14 +261,17 @@ socket.on("chatImage", ({ username, image, color }) => {
   playSound("rec.mp3");
   const div = document.createElement("div");
   div.classList.add("message");
+
   const img = document.createElement("img");
   img.src = image;
   img.style.maxWidth = "200px";
   img.style.borderRadius = "10px";
   img.style.marginTop = "6px";
   img.style.display = "block";
+
   div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>:`;
   div.appendChild(img);
+
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 });
@@ -314,7 +297,10 @@ socket.on("updateParties", (list) => {
     row.onclick = () => {
       partyNameInput.value = p.name;
       partyPasswordInput.value = "";
-      if (!p.isPrivate) socket.emit("joinParty", { name: p.name, password: "" });
+      if (!p.isPrivate) {
+        // Auto-join public party
+        socket.emit("joinParty", { name: p.name, password: "" });
+      }
     };
     partiesList.appendChild(row);
   });
@@ -338,26 +324,3 @@ function escapeHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
-
-// === Name Color Button Logic ===
-const changeColorBtn = document.getElementById("changeColorBtn");
-const nameColorPicker = document.getElementById("nameColorPicker");
-
-// Toggle picker visibility
-changeColorBtn.addEventListener("click", () => {
-  nameColorPicker.style.display = nameColorPicker.style.display === "block" ? "none" : "block";
-});
-
-// Only send color after user finishes choosing
-let colorChangeTimer;
-nameColorPicker.addEventListener("input", (e) => {
-  const newColor = e.target.value;
-  savedColor = newColor;
-  localStorage.setItem("chatColor", newColor);
-
-  clearTimeout(colorChangeTimer);
-  colorChangeTimer = setTimeout(() => {
-    socket.emit("setUsername", { username, color: newColor });
-    systemLine(`✅ Name color changed!`);
-  }, 300);
-});
