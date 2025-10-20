@@ -460,12 +460,4 @@ body {
   transform: scale(0.5);        /* 50% zoom */
   transform-origin: top center;  /* scale from top center */
   width: 200%;                   /* compensate for scaling */
-  font-size: 1.4em;              /* make all text 1.4x bigger */
-}
-
-/* Optional: scale all elements that might have fixed font-sizes */
-*,
-*::before,
-*::after {
-  font-size: 1.4em !important;
 }
