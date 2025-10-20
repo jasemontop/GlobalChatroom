@@ -450,3 +450,10 @@ h1 {
   border-color: var(--text);
   box-shadow: 0 0 12px currentColor;
 }
+
+/* ===== SCALE ENTIRE WEBSITE ===== */
+body {
+  transform: scale(0.5);
+  transform-origin: top left; /* keeps content aligned at top-left */
+  width: 200%; /* compensates for the scaling */
+}
