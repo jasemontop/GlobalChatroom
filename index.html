@@ -96,7 +96,23 @@
       </div>
     </div>
   </div>
-
+  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAG2c9dBLkWpx1UmDd3F-GUCLT4UKXlC9Y",
+    authDomain: "globalchatauth.firebaseapp.com",
+    projectId: "globalchatauth",
+    storageBucket: "globalchatauth.firebasestorage.app",
+    messagingSenderId: "87114191015",
+    appId: "1:87114191015:web:e8a38740f0073e42990b82",
+    measurementId: "G-3ZK9CXQ19E"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+</script>
+  
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
   <script>
