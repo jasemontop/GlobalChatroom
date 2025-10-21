@@ -368,3 +368,70 @@ socket.on("receiveInvite", ({ from }) => {
     toast(`❌ You declined ${from}'s invite`);
   };
 });
+
+const authModal = document.getElementById("auth-modal");
+const usernameInput = document.getElementById("auth-username");
+const emailInput = document.getElementById("auth-email");
+const passwordInput = document.getElementById("auth-password");
+const signupBtn = document.getElementById("signup-btn");
+const loginBtn = document.getElementById("login-btn");
+const authMessage = document.getElementById("auth-message");
+
+// Sign up new user
+signupBtn.addEventListener("click", () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  const username = usernameInput.value.trim();
+
+  if (!username || !email || !password) {
+    authMessage.textContent = "Fill in all fields!";
+    return;
+  }
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      // Store username in localStorage
+      localStorage.setItem("chatUsername", username);
+      authModal.style.display = "none";
+      showChat(username);
+    })
+    .catch((error) => {
+      authMessage.textContent = error.message;
+    });
+});
+
+// Log in existing user
+loginBtn.addEventListener("click", () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  const username = usernameInput.value.trim();
+
+  if (!email || !password) {
+    authMessage.textContent = "Fill in email and password!";
+    return;
+  }
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      localStorage.setItem("chatUsername", username);
+      authModal.style.display = "none";
+      showChat(username);
+    })
+    .catch((error) => {
+      authMessage.textContent = error.message;
+    });
+});
+
+// Example function to show chat after login
+function showChat(username) {
+  document.getElementById("chatContainer").style.display = "flex";
+  // Show creator badge if username is "jasem"
+  if (username.toLowerCase() === "jasem") {
+    const display = document.createElement("span");
+    display.textContent = " 🛠️";
+    document.querySelector("#chat h1").appendChild(display);
+  }
+  document.querySelector("#usernameForm").style.display = "none";
+}
