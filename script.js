@@ -435,3 +435,84 @@ function showChat(username) {
   }
   document.querySelector("#usernameForm").style.display = "none";
 }
+
+// Grab modal and input elements
+const authModal = document.getElementById("auth-modal");
+const usernameInput = document.getElementById("auth-username");
+const emailInput = document.getElementById("auth-email");
+const passwordInput = document.getElementById("auth-password");
+const signupBtn = document.getElementById("signup-btn");
+const loginBtn = document.getElementById("login-btn");
+const authMessage = document.getElementById("auth-message");
+
+// Show chat after login/signup
+function showChat(username) {
+  document.getElementById("chatContainer").style.display = "flex";
+  document.querySelector("#usernameForm").style.display = "none";
+  
+  // Display creator badge for "jasem"
+  if (username.toLowerCase() === "jasem") {
+    const display = document.createElement("span");
+    display.textContent = " 🛠️"; // Creator badge
+    document.querySelector("#chatContainer h1").appendChild(display);
+  }
+}
+
+// Sign up new user
+signupBtn.addEventListener("click", () => {
+  const username = usernameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  // Validation
+  if (!username || !email || !password) {
+    authMessage.textContent = "Please fill in all fields!";
+    return;
+  }
+  if (/[\u{1F600}-\u{1F6FF}]/u.test(username)) { // simple emoji check
+    authMessage.textContent = "Usernames cannot contain emojis!";
+    return;
+  }
+
+  // Create Firebase account
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(userCredential => {
+      localStorage.setItem("chatUsername", username);
+      authModal.style.display = "none";
+      showChat(username);
+    })
+    .catch(error => {
+      authMessage.textContent = error.message;
+    });
+});
+
+// Log in existing user
+loginBtn.addEventListener("click", () => {
+  const username = usernameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!email || !password) {
+    authMessage.textContent = "Please enter email and password!";
+    return;
+  }
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(userCredential => {
+      localStorage.setItem("chatUsername", username);
+      authModal.style.display = "none";
+      showChat(username);
+    })
+    .catch(error => {
+      authMessage.textContent = error.message;
+    });
+});
+
+// Optional: auto-login if user already signed in
+auth.onAuthStateChanged(user => {
+  if (user) {
+    const username = localStorage.getItem("chatUsername") || user.email;
+    authModal.style.display = "none";
+    showChat(username);
+  }
+});
