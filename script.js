@@ -368,3 +368,46 @@ socket.on("receiveInvite", ({ from }) => {
     toast(`❌ You declined ${from}'s invite`);
   };
 });
+
+// --- REVIEW BUTTON FUNCTIONALITY ---
+const openReviewBtn = document.getElementById("openReviewBtn");
+const reviewModal = document.getElementById("reviewModal");
+const stars = document.querySelectorAll("#starRating .star");
+const submitReview = document.getElementById("submitReview");
+let selectedRating = 0;
+
+openReviewBtn.addEventListener("click", () => {
+  reviewModal.classList.toggle("hidden");
+});
+
+// Star selection
+stars.forEach(star => {
+  star.addEventListener("click", () => {
+    selectedRating = parseInt(star.dataset.value);
+    stars.forEach(s => s.classList.remove("selected"));
+    for (let i = 0; i < selectedRating; i++) stars[i].classList.add("selected");
+  });
+});
+
+// Submit review to Firestore
+submitReview.addEventListener("click", async () => {
+  const text = document.getElementById("reviewText").value.trim();
+  if (selectedRating === 0) return alert("Please select a rating.");
+  
+  try {
+    const db = firebase.firestore();
+    await db.collection("reviews").add({
+      rating: selectedRating,
+      feedback: text,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    alert("Thanks for your feedback!");
+    reviewModal.classList.add("hidden");
+    document.getElementById("reviewText").value = "";
+    stars.forEach(s => s.classList.remove("selected"));
+    selectedRating = 0;
+  } catch (err) {
+    console.error("Error submitting review:", err);
+    alert("Failed to submit review.");
+  }
+});
