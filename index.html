@@ -69,6 +69,9 @@
       <h2>Join the party</h2>
       <input type="text" id="usernameInput" placeholder="Pick a username…" required />
       <input type="color" id="usernameColor" value="#ffd700" title="Choose your name color" />
+      <label for="pfpInput" style="color:var(--muted); font-size:0.9rem;">Choose a profile picture:</label>
+<input type="file" id="pfpInput" accept="image/*">
+<img id="pfpPreview" alt="Profile Preview">
       <button type="submit">Enter Chat</button>
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
