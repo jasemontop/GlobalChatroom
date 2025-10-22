@@ -7,49 +7,52 @@
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
+<div id="appWrapper" style="position:relative; width:100%; height:100vh; display:flex; justify-content:center; align-items:center; transform: scale(0.5); transform-origin: center;">
+  
   <!-- Login/Signup Modal -->
-<div id="auth-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:9999;">
-  <div style="background:#1b1f24;padding:30px;border-radius:16px;width:350px;text-align:center;color:#e7edf3;">
-    <h2>Sign Up / Log In</h2>
-    <input type="text" id="auth-username" placeholder="Username" style="width:90%;padding:10px;margin:8px 0;border-radius:10px;border:none;">
-    <input type="email" id="auth-email" placeholder="Email" style="width:90%;padding:10px;margin:8px 0;border-radius:10px;border:none;">
-    <input type="password" id="auth-password" placeholder="Password" style="width:90%;padding:10px;margin:8px 0;border-radius:10px;border:none;">
-    <div style="margin-top:12px;">
-      <button id="signup-btn" style="padding:10px 20px;margin-right:10px;border:none;border-radius:10px;background:#ffd700;cursor:pointer;">Sign Up</button>
-      <button id="login-btn" style="padding:10px 20px;border:none;border-radius:10px;background:#00ffcc;cursor:pointer;">Log In</button>
+  <div id="auth-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:9999;">
+    <div style="background:#1b1f24;padding:30px;border-radius:16px;width:350px;text-align:center;color:#e7edf3;">
+      <h2>Sign Up / Log In</h2>
+      <input type="text" id="auth-username" placeholder="Username" style="width:90%;padding:10px;margin:8px 0;border-radius:10px;border:none;">
+      <input type="email" id="auth-email" placeholder="Email" style="width:90%;padding:10px;margin:8px 0;border-radius:10px;border:none;">
+      <input type="password" id="auth-password" placeholder="Password" style="width:90%;padding:10px;margin:8px 0;border-radius:10px;border:none;">
+      <div style="margin-top:12px;">
+        <button id="signup-btn" style="padding:10px 20px;margin-right:10px;border:none;border-radius:10px;background:#ffd700;cursor:pointer;">Sign Up</button>
+        <button id="login-btn" style="padding:10px 20px;border:none;border-radius:10px;background:#00ffcc;cursor:pointer;">Log In</button>
+      </div>
+      <p id="auth-message" style="margin-top:12px;color:#ff5555;"></p>
     </div>
-    <p id="auth-message" style="margin-top:12px;color:#ff5555;"></p>
   </div>
-</div>
+
+  <!-- REVIEW BUTTON SHELL -->
+  <div id="reviewShell" class="card" style="position:absolute; top:32px; right:32px; width:280px; z-index:1000;">
+    <button id="openReviewBtn" style="width:100%; padding:12px; border-radius:10px; border:none; font-weight:600; cursor:pointer; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color:#00130a;">
+      Help me make the website better!
+    </button>
+
+    <!-- REVIEW MODAL (HIDDEN BY DEFAULT) -->
+    <div id="reviewModal" class="hidden" style="margin-top:12px; background:var(--panel); padding:12px; border-radius:12px; display:flex; flex-direction:column; gap:10px;">
+      <label>Rate the website:</label>
+      <div id="starRating" style="display:flex; gap:4px;">
+        <span class="star" data-value="1">☆</span>
+        <span class="star" data-value="2">☆</span>
+        <span class="star" data-value="3">☆</span>
+        <span class="star" data-value="4">☆</span>
+        <span class="star" data-value="5">☆</span>
+      </div>
+
+      <label>What could we change?</label>
+      <textarea id="reviewText" rows="4" style="width:100%; border-radius:8px; border:1px solid rgba(255,255,255,.08); background:#13161a; color:var(--text); padding:8px;"></textarea>
+
+      <button id="submitReview" style="padding:10px; border-radius:10px; border:none; font-weight:600; cursor:pointer; background:linear-gradient(135deg, var(--brand-2), var(--brand)); color:#00130a;">
+        Submit
+      </button>
+    </div>
+  </div>
+
+  <!-- CHAT CONTAINER -->
   <div id="chat-container">
     <h1>🌍 Global Chatroom</h1>
-
-    <!-- REVIEW BUTTON SHELL -->
-<div id="reviewShell" class="card" style="position: absolute; top: 32px; right: 32px; width: 280px; z-index: 1000;">
-  <button id="openReviewBtn" style="width:100%; padding:12px; border-radius:10px; border:none; font-weight:600; cursor:pointer; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color:#00130a;">
-    Help me make the website better!
-  </button>
-
-  <!-- REVIEW MODAL (HIDDEN BY DEFAULT) -->
-  <div id="reviewModal" class="hidden" style="margin-top:12px; background:var(--panel); padding:12px; border-radius:12px; display:flex; flex-direction:column; gap:10px;">
-    <label>Rate the website:</label>
-    <div id="starRating" style="display:flex; gap:4px;">
-      <span class="star" data-value="1">☆</span>
-      <span class="star" data-value="2">☆</span>
-      <span class="star" data-value="3">☆</span>
-      <span class="star" data-value="4">☆</span>
-      <span class="star" data-value="5">☆</span>
-    </div>
-
-    <label>What could we change?</label>
-    <textarea id="reviewText" rows="4" style="width:100%; border-radius:8px; border:1px solid rgba(255,255,255,.08); background:#13161a; color:var(--text); padding:8px;"></textarea>
-
-    <button id="submitReview" style="padding:10px; border-radius:10px; border:none; font-weight:600; cursor:pointer; background:linear-gradient(135deg, var(--brand-2), var(--brand)); color:#00130a;">
-      Submit
-    </button>
-  </div>
-</div>
-
 
     <!-- USERNAME -->
     <form id="usernameForm" class="card">
@@ -90,10 +93,8 @@
           <div class="party-controls">
             <label>Party Name:</label>
             <input type="text" id="partyNameInput" placeholder="e.g., Family, Friends, Study Group"/>
-
             <label>Password:</label>
             <input type="text" id="partyPasswordInput" placeholder="leave empty for Public"/>
-
             <div class="party-actions">
               <button id="createPartyBtn" type="button">Create Party</button>
               <button id="joinPartyBtn" type="button">Join Party</button>
@@ -101,29 +102,29 @@
             </div>
           </div>
         </div>
-
       </div>
 
       <div class="right">
         <h3>Online now</h3>
         <ul id="userList" class="users"></ul>
 
-    <!-- ===== INVITE POPUP ===== -->
-<div id="invitePopup" class="popup hidden">
-  <p id="inviteText"></p>
-  <div class="invite-buttons">
-    <button id="acceptInvite">Accept</button>
-    <button id="declineInvite">Decline</button>
-  </div>
-</div>
-
+        <!-- ===== INVITE POPUP ===== -->
+        <div id="invitePopup" class="popup hidden">
+          <p id="inviteText"></p>
+          <div class="invite-buttons">
+            <button id="acceptInvite">Accept</button>
+            <button id="declineInvite">Decline</button>
+          </div>
+        </div>
 
         <h3 style="margin-top:12px;">Available Parties</h3>
         <div id="partiesList" class="users"></div>
       </div>
     </div>
   </div>
-  
+
+</div> <!-- End of appWrapper -->
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
@@ -139,39 +140,35 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
 </script>
-  
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
-  <script>
-    // Enter key sends message
-    const input = document.getElementById('messageInput');
-    const send = document.getElementById('sendButton');
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
 
-    // Theme color pickers
-    const bgPicker = document.getElementById('bgThemePicker');
-    const accentPicker = document.getElementById('accentThemePicker');
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+<script>
+  // Enter key sends message
+  const input = document.getElementById('messageInput');
+  const send = document.getElementById('sendButton');
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
 
-    bgPicker.addEventListener('input', (e) => {
-      document.documentElement.style.setProperty('--bg-gradient', e.target.value);
-      localStorage.setItem('chatBg', e.target.value);
-    });
-    accentPicker.addEventListener('input', (e) => {
-      document.documentElement.style.setProperty('--accent-color', e.target.value);
-      localStorage.setItem('chatAccent', e.target.value);
-    });
+  // Theme color pickers
+  const bgPicker = document.getElementById('bgThemePicker');
+  const accentPicker = document.getElementById('accentThemePicker');
 
-    // Load saved theme
-    const savedBg = localStorage.getItem('chatBg');
-    const savedAccent = localStorage.getItem('chatAccent');
-    if(savedBg) { document.documentElement.style.setProperty('--bg-gradient', savedBg); bgPicker.value = savedBg; }
-    if(savedAccent) { document.documentElement.style.setProperty('--accent-color', savedAccent); accentPicker.value = savedAccent; }
-  </script>
+  bgPicker.addEventListener('input', (e) => {
+    document.documentElement.style.setProperty('--bg-gradient', e.target.value);
+    localStorage.setItem('chatBg', e.target.value);
+  });
+  accentPicker.addEventListener('input', (e) => {
+    document.documentElement.style.setProperty('--accent-color', e.target.value);
+    localStorage.setItem('chatAccent', e.target.value);
+  });
 
-  <!-- Chat sounds -->
+  // Load saved theme
+  const savedBg = localStorage.getItem('chatBg');
+  const savedAccent = localStorage.getItem('chatAccent');
+  if(savedBg) { document.documentElement.style.setProperty('--bg-gradient', savedBg); bgPicker.value = savedBg; }
+  if(savedAccent) { document.documentElement.style.setProperty('--accent-color', savedAccent); accentPicker.value = savedAccent; }
+</script>
 
-  <!-- Silent unlock video -->
-  <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
-
+<video id="unlockVideo" playsinline muted loop style="display:none;"></video>
 </body>
 </html>
