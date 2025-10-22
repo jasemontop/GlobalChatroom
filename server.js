@@ -3,12 +3,27 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
+const fs = require('fs').promises;
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname)));
+
+// Simple reviews storage. Note: many PaaS providers (including Render) have ephemeral filesystems
+// so this is fine for quick testing but for durable storage use a DB or external storage service.
+const REVIEWS_FILE = path.join(__dirname, 'reviews.json');
+
+app.get('/reviews.json', async (req, res) => {
+  try {
+    const txt = await fs.readFile(REVIEWS_FILE, 'utf8');
+    res.setHeader('Content-Type', 'application/json');
+    return res.send(txt);
+  } catch (e) {
+    return res.json([]);
+  }
+});
 
 const users = {}; // socket.id -> username
 const parties = {}; // roomName -> { password?: string, sockets:Set<string> }
@@ -32,6 +47,23 @@ socket.on("setUsername", ({ username, color }) => {
   io.emit("systemMessage", `🟢 ${clean} joined the chat`);
   io.emit("updateUsers", Object.values(users).map(u => u.name));
   sendPartyList();
+});
+
+  // === Party Invite ===
+socket.on("sendInvite", ({ targetUsername }) => {
+  const sender = users[socket.id]?.name || "Anonymous";
+
+  // Find the target socket ID
+  const targetSocketId = Object.entries(users)
+    .find(([id, u]) => u.name === targetUsername)?.[0];
+
+  if (!targetSocketId) {
+    socket.emit("systemMessage", `❌ User ${targetUsername} not found or offline.`);
+    return;
+  }
+
+  // Send the invite to the target user
+  io.to(targetSocketId).emit("receiveInvite", { from: sender });
 });
 
 
@@ -128,6 +160,21 @@ if (user) {
     }
 
     sendPartyList();
+  });
+
+  // === Receive review from client and persist ===
+  socket.on('submitReview', async (review) => {
+    try {
+      let arr = [];
+      try { arr = JSON.parse(await fs.readFile(REVIEWS_FILE, 'utf8') || '[]'); } catch (err) { arr = []; }
+      arr.push(review);
+      await fs.writeFile(REVIEWS_FILE, JSON.stringify(arr, null, 2), 'utf8');
+      console.log('Saved review', review);
+      // notify admin room
+      io.to('admins').emit('newReview', review);
+    } catch (err) {
+      console.error('Failed to persist review', err);
+    }
   });
 });
 

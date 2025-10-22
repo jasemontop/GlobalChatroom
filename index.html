@@ -19,6 +19,18 @@
       <p class="hint">You’ll appear to everyone with this name.</p>
     </form>
 
+    <!-- CHANGE NAME COLOR BUTTON (HIDDEN UNTIL USER SETS NAME) -->
+    <div id="changeColorContainer" style="display:none; margin:10px 0;">
+      <button id="changeColorBtn" type="button">Change Name Color</button>
+      <input type="color" id="nameColorPicker" style="display:none;" />
+    </div>
+
+    <!-- THEME PICKER -->
+    <div id="themeContainer">
+      <label for="bgThemePicker">Background:</label>
+      <input type="color" id="bgThemePicker" value="#0d0f12" title="Pick background color" />
+    </div>
+
     <!-- CHAT + SIDEBAR -->
     <div id="chatContainer" class="card grid" style="display:none;">
       <div class="left">
@@ -55,9 +67,57 @@
         <h3>Online now</h3>
         <ul id="userList" class="users"></ul>
 
+        <!-- ===== INVITE POPUP ===== -->
+<div id="invitePopup" class="popup hidden">
+  <p id="inviteText"></p>
+  <div class="invite-buttons">
+    <button id="acceptInvite">Accept</button>
+    <button id="declineInvite">Decline</button>
+  </div>
+</div>
+
         <h3 style="margin-top:12px;">Available Parties</h3>
         <div id="partiesList" class="users"></div>
+        
+        <!-- REVIEW BUTTON -->
+        <div style="margin-top:14px; text-align:center;">
+          <button id="openReviewBtn" class="card" style="cursor:pointer;">Leave a Review ⭐</button>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal overlay -->
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <!-- REVIEW MODAL -->
+  <div id="reviewModal" class="popup hidden" aria-hidden="true" role="dialog" aria-labelledby="reviewTitle">
+    <h3 id="reviewTitle">Rate your experience</h3>
+    <div id="starRating" style="display:flex; gap:8px; justify-content:center; margin:12px 0">
+      <button class="star" data-value="1" aria-label="1 star">★</button>
+      <button class="star" data-value="2" aria-label="2 stars">★</button>
+      <button class="star" data-value="3" aria-label="3 stars">★</button>
+      <button class="star" data-value="4" aria-label="4 stars">★</button>
+      <button class="star" data-value="5" aria-label="5 stars">★</button>
+    </div>
+    <textarea id="reviewText" placeholder="What could we improve?" rows="5" style="width:100%; border-radius:10px; padding:10px; background:#0e1114; color:var(--text); border:1px solid rgba(255,255,255,.04)"></textarea>
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <button id="submitReview" style="flex:1;">Submit Review</button>
+      <button id="cancelReview" style="flex:1; background:#2a2f36;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- REVIEWS PANEL (read-only viewer) -->
+  <div id="reviewsPanel" class="popup hidden" role="dialog" aria-labelledby="reviewsTitle">
+    <h3 id="reviewsTitle">Collected Reviews</h3>
+    <div style="margin:10px 0; display:flex; gap:8px; justify-content:center;">
+      <button id="exportReviews">Export JSON</button>
+      <button id="clearReviews" style="background:#2a2f36;">Clear Local</button>
+      <button id="fetchServerReviews" style="background:#0f1720;">Load Server File</button>
+    </div>
+    <div id="reviewsList" style="max-height:360px; overflow:auto; padding:8px;"></div>
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <button id="closeReviews" style="flex:1; background:linear-gradient(135deg,var(--brand-2),var(--brand)); color:#00130a;">Close</button>
     </div>
   </div>
 
@@ -68,13 +128,31 @@
     const input = document.getElementById('messageInput');
     const send = document.getElementById('sendButton');
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send.click(); }});
+
+    // Theme color pickers
+    const bgPicker = document.getElementById('bgThemePicker');
+    const accentPicker = document.getElementById('accentThemePicker');
+
+    bgPicker.addEventListener('input', (e) => {
+      document.documentElement.style.setProperty('--bg-gradient', e.target.value);
+      localStorage.setItem('chatBg', e.target.value);
+    });
+    accentPicker.addEventListener('input', (e) => {
+      document.documentElement.style.setProperty('--accent-color', e.target.value);
+      localStorage.setItem('chatAccent', e.target.value);
+    });
+
+    // Load saved theme
+    const savedBg = localStorage.getItem('chatBg');
+    const savedAccent = localStorage.getItem('chatAccent');
+    if(savedBg) { document.documentElement.style.setProperty('--bg-gradient', savedBg); bgPicker.value = savedBg; }
+    if(savedAccent) { document.documentElement.style.setProperty('--accent-color', savedAccent); accentPicker.value = savedAccent; }
   </script>
 
-<!-- Chat sounds -->
+  <!-- Chat sounds -->
 
-
-<!-- Silent unlock video -->
-<video id="unlockVideo" playsinline muted loop style="display:none;"></video>
+  <!-- Silent unlock video -->
+  <video id="unlockVideo" playsinline muted loop style="display:none;"></video>
 
 </body>
 </html>

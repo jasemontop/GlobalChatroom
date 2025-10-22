@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reviews - Admin</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { display:flex; align-items:flex-start; justify-content:center; padding:28px; background:linear-gradient(180deg,#071018,#071217); }
+    .panel { width:980px; max-width:96vw; border-radius:12px; padding:18px; background:linear-gradient(180deg,#0d1114,#061018); color:var(--text); }
+    #list { max-height:70vh; overflow:auto; margin-top:12px; }
+    .review { padding:12px; border-radius:10px; background:#0b0f12; margin-bottom:8px; border:1px solid rgba(255,255,255,.03); }
+    .meta { color:var(--muted); font-size:0.9rem; margin-bottom:6px; }
+    .controls { display:flex; gap:8px; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h2>Collected Reviews (admin)</h2>
+    <div class="controls">
+      <button id="reload">Reload</button>
+      <button id="download">Download JSON</button>
+      <button id="clearLocal">Clear Local Copy</button>
+      <span style="margin-left:auto; color:var(--muted);">Note: For persistent storage use a DB or external storage</span>
+    </div>
+
+    <div id="list">Loading...</div>
+  </div>
+
+  <script>
+    async function load() {
+      const el = document.getElementById('list');
+      el.textContent = 'Loading...';
+      try {
+        const res = await fetch('/reviews.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Not found');
+        const arr = await res.json();
+        if (!arr || arr.length === 0) { el.textContent = 'No reviews saved on server.'; return; }
+        el.innerHTML = '';
+        arr.slice().reverse().forEach(r => {
+          const d = document.createElement('div'); d.className = 'review';
+          const meta = document.createElement('div'); meta.className = 'meta';
+          meta.textContent = `${r.user||'Anonymous'} • ${r.rating}★ • ${new Date(r.timestamp||Date.now()).toLocaleString()}`;
+          const t = document.createElement('div'); t.textContent = r.feedback || '';
+          d.appendChild(meta); d.appendChild(t); el.appendChild(d);
+        });
+      } catch (err) {
+        el.textContent = 'Failed to load reviews from server.';
+        console.error(err);
+      }
+    }
+
+    document.getElementById('reload').addEventListener('click', load);
+    document.getElementById('download').addEventListener('click', async () => {
+      try {
+        const res = await fetch('/reviews.json', { cache: 'no-store' });
+        const arr = await res.json();
+        const blob = new Blob([JSON.stringify(arr, null, 2)], { type:'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'reviews.json'; document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) { alert('Failed to download'); }
+    });
+
+    document.getElementById('clearLocal').addEventListener('click', () => {
+      if(!confirm('Remove localStorage copy (gc_reviews) from this browser?')) return; localStorage.removeItem('gc_reviews'); alert('Cleared.');
+    });
+
+    load();
+  </script>
+</body>
+</html>

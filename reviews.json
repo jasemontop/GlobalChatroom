@@ -1,0 +1,20 @@
+[
+  {
+    "rating": 5,
+    "feedback": "test",
+    "user": "test",
+    "timestamp": 1761175407875
+  },
+  {
+    "rating": 4,
+    "feedback": "test",
+    "user": "test",
+    "timestamp": 1761175524094
+  },
+  {
+    "rating": 5,
+    "feedback": "test",
+    "user": "test",
+    "timestamp": 1761175643340
+  }
+]

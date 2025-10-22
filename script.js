@@ -1,27 +1,9 @@
 // script.js
 const socket = io();
 
-// --- Handle image paste once ---
-document.addEventListener("paste", (e) => {
-  const items = e.clipboardData?.items;
-  if (!items) return;
-
-  for (const item of items) {
-    if (item.type.startsWith("image/")) {
-      const file = item.getAsFile();
-      const reader = new FileReader();
-      reader.onload = () => {
-        socket.emit("sendImage", {
-          image: reader.result,
-          party: currentParty,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-});
-
-let username = "";
+// --- Load saved username from localStorage ---
+let username = localStorage.getItem("chatUsername") || "";
+let savedColor = localStorage.getItem("chatColor") || "#ffd700";
 let currentParty = null;
 
 // DOM
@@ -37,9 +19,9 @@ const partyNameInput = document.getElementById("partyNameInput");
 const partyPasswordInput = document.getElementById("partyPasswordInput");
 const createPartyBtn = document.getElementById("createPartyBtn");
 const joinPartyBtn = document.getElementById("joinPartyBtn");
+const leavePartyBtn = document.getElementById("leavePartyBtn");
 
-
-// --- Universal sound system (super clean trim + micro fade) ---
+// --- Universal sound system ---
 const playSound = (file) => {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   fetch(file)
@@ -51,15 +33,11 @@ const playSound = (file) => {
       src.buffer = audioBuf;
       src.connect(gain);
       gain.connect(ctx.destination);
-
-      // volume
       gain.gain.value = 0.40;
 
-      // play 70% of file to cut off tail noise
       const duration = audioBuf.duration * 0.35;
       const endTime = ctx.currentTime + duration;
 
-      // quick fade-out (30ms)
       gain.gain.setValueAtTime(0.35, endTime - 0.03);
       gain.gain.linearRampToValueAtTime(0, endTime);
 
@@ -83,7 +61,6 @@ document.addEventListener("paste", (event) => {
       reader.onload = (e) => {
         pastedImageData = e.target.result;
 
-        // show a small preview above the message input
         let preview = document.getElementById("imagePreview");
         if (!preview) {
           preview = document.createElement("div");
@@ -112,12 +89,9 @@ document.addEventListener("paste", (event) => {
 
           preview.appendChild(img);
           preview.appendChild(cancel);
-
-          // insert preview just above the message input
           messageInput.parentNode.insertBefore(preview, messageInput);
         }
 
-        // update the img src
         preview.querySelector("img").src = pastedImageData;
       };
       reader.readAsDataURL(file);
@@ -126,17 +100,13 @@ document.addEventListener("paste", (event) => {
   }
 });
 
-
-
-// --- Unlock Chrome audio (bulletproof for Chrome) ---
+// --- Unlock Chrome audio ---
 const sndSend = document.getElementById("sndSend");
 const sndRecv = document.getElementById("sndRecv");
 
-// Chrome often blocks audio until *any* media element plays successfully
-// So we'll unlock by using a silent <video> hack
 const unlockAudio = () => {
   const silent = document.createElement("video");
-  silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA=="; // silent tiny mp4
+  silent.src = "data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDFtcDQxaXNvbQAAAAhmcmVlAAAAA3ZtZAAAAANtb292AAAAAG1kYXQhEA==";
   silent.muted = true;
   silent.play().catch(()=>{});
   setTimeout(() => silent.remove(), 2000);
@@ -150,39 +120,49 @@ const unlockAudio = () => {
 
 window.addEventListener("click", unlockAudio, { once: true });
 
-
+// --- Username form submission ---
 usernameForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = (usernameInput.value || "").trim();
   const color = document.getElementById("usernameColor").value || "#ffd700";
   if (!name) return;
+
   username = name;
-  socket.emit("setUsername", { username, color }); // now sends color too
+  savedColor = color;
+
+  // Save in localStorage
+  localStorage.setItem("chatUsername", username);
+  localStorage.setItem("chatColor", color);
+
+  socket.emit("setUsername", { username, color });
+
   usernameForm.style.display = "none";
   chatContainer.style.display = "block";
 });
 
-// send message OR one pasted image
+// --- If username is saved, auto-set it ---
+if (username) {
+  socket.emit("setUsername", { username, color: savedColor });
+  usernameForm.style.display = "none";
+  chatContainer.style.display = "block";
+}
+
+// --- Send message ---
 sendButton.addEventListener("click", () => {
-  // if there's an image ready to send
   if (pastedImageData) {
-    // prevent double-sending
     if (sendButton.disabled) return;
     sendButton.disabled = true;
 
     socket.emit("sendImage", { image: pastedImageData, party: currentParty });
 
-    // reset
     const preview = document.getElementById("imagePreview");
     if (preview) preview.remove();
     pastedImageData = null;
 
-    // small delay to re-enable button
     setTimeout(() => (sendButton.disabled = false), 600);
     return;
   }
 
-  // otherwise, handle normal text message
   const text = (messageInput.value || "").trim();
   if (!text) return;
   if (!username) return alert("Set a username first!");
@@ -195,13 +175,10 @@ sendButton.addEventListener("click", () => {
 messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    sendButton.click(); // triggers the same send logic
+    sendButton.click();
   }
 });
 
-
-
-// --- Typing indicator ---
 let typingTimeout;
 messageInput.addEventListener("input", () => {
   if (!currentParty) return;
@@ -215,16 +192,13 @@ messageInput.addEventListener("input", () => {
 messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-
-    // If there's an image in the clipboard, ignore this Enter press
-    if (e.ctrlKey || e.metaKey) return; // skip accidental paste combos
-    if (messageInput.value.trim() === "") return; // no text to send
-
+    if (e.ctrlKey || e.metaKey) return;
+    if (messageInput.value.trim() === "") return;
     sendButton.click();
   }
 });
 
-// show/hide typing text when others type
+// --- Typing indicator ---
 socket.on("typing", ({ username, isTyping, party }) => {
   const indicator = document.getElementById("typingIndicator");
   if (!indicator || party !== currentParty) return;
@@ -236,8 +210,7 @@ socket.on("typing", ({ username, isTyping, party }) => {
   }
 });
 
-
-// 3) Create / Join party
+// --- Party buttons ---
 createPartyBtn.addEventListener("click", () => {
   const name = (partyNameInput.value || "").trim();
   const password = (partyPasswordInput.value || "").trim();
@@ -252,8 +225,6 @@ joinPartyBtn.addEventListener("click", () => {
   socket.emit("joinParty", { name, password });
 });
 
-// Leave party
-const leavePartyBtn = document.getElementById("leavePartyBtn");
 leavePartyBtn.addEventListener("click", () => {
   if (!currentParty) return alert("You’re not in a party!");
   socket.emit("leaveParty", { party: currentParty });
@@ -261,8 +232,12 @@ leavePartyBtn.addEventListener("click", () => {
   currentParty = null;
 });
 
+// --- Auto-join after creating a party ---
 socket.on("partyCreated", (room) => {
   toast(`✅ Party "${room}" created`);
+
+  // Auto-join created party
+  socket.emit("joinParty", { name: room, password: "" });
 });
 
 socket.on("partyJoined", (room) => {
@@ -272,15 +247,18 @@ socket.on("partyJoined", (room) => {
 
 socket.on("partyError", (msg) => alert(msg));
 
-// 4) Incoming messages
+// --- Chat messages ---
 socket.on("chatMessage", ({ username, message, color }) => {
   playSound("rec.mp3");
+  const div = document.createElement("div");
+  div.classList.add("message");
+  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>: ${escapeHtml(message)}`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+});
 
-  // --- Show received images ---
 socket.on("chatImage", ({ username, image, color }) => {
-
   playSound("rec.mp3");
-
   const div = document.createElement("div");
   div.classList.add("message");
 
@@ -298,20 +276,8 @@ socket.on("chatImage", ({ username, image, color }) => {
   chat.scrollTop = chat.scrollHeight;
 });
 
-
-
-  const div = document.createElement("div");
-  div.classList.add("message");
-  div.innerHTML = `<strong style="color:${color || "#ffd700"}">${escapeHtml(username)}</strong>: ${escapeHtml(message)}`;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-});
-
-
-
-socket.on("systemMessage", (text) => {
-  systemLine(text);
-});
+// --- System and user updates ---
+socket.on("systemMessage", (text) => systemLine(text));
 
 socket.on("updateUsers", (users) => {
   userList.innerHTML = "";
@@ -327,17 +293,20 @@ socket.on("updateParties", (list) => {
   list.forEach((p) => {
     const row = document.createElement("li");
     row.innerHTML = `${p.name} • ${p.isPrivate ? "Private 🔒" : "Public 🌐"} • ${p.users} online`;
-    // quick-join on click
     row.style.cursor = "pointer";
     row.onclick = () => {
       partyNameInput.value = p.name;
-      partyPasswordInput.value = ""; // user fills if private
+      partyPasswordInput.value = "";
+      if (!p.isPrivate) {
+        // Auto-join public party
+        socket.emit("joinParty", { name: p.name, password: "" });
+      }
     };
     partiesList.appendChild(row);
   });
 });
 
-// helpers
+// --- Helpers ---
 function systemLine(text) {
   const div = document.createElement("div");
   div.classList.add("system");
@@ -347,7 +316,6 @@ function systemLine(text) {
 }
 
 function toast(msg) {
-  // simple inline toast via system line (keeps OG vibe)
   systemLine(msg);
 }
 
@@ -357,4 +325,193 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// ===== PARTY INVITE FEATURE =====
 
+// DOM
+const invitePopup = document.getElementById("invitePopup");
+const inviteText = document.getElementById("inviteText");
+const acceptBtn = document.getElementById("acceptInvite");
+const declineBtn = document.getElementById("declineInvite");
+
+// --- Send invite when clicking a username ---
+userList.addEventListener("click", (e) => {
+  const li = e.target.closest("li");
+  if (!li) return;
+
+  const targetUser = li.textContent.trim();
+  if (targetUser === username) return; // can't invite self
+
+  const confirmInvite = confirm(`Invite ${targetUser} to your party?`);
+  if (!confirmInvite) return;
+
+  socket.emit("sendInvite", { targetUsername: targetUser });
+  toast(`📨 Invite sent to ${targetUser}`);
+});
+
+// --- Receive invite ---
+socket.on("receiveInvite", ({ from }) => {
+  inviteText.textContent = `📩 ${from} invited you to join their party!`;
+  invitePopup.classList.remove("hidden");
+
+  // Accept
+  acceptBtn.onclick = () => {
+    invitePopup.classList.add("hidden");
+    // Auto-join their current party (prompt user for party name if needed)
+    const partyName = prompt(`Enter the party name of ${from} to join:`) || "";
+    if (!partyName) return;
+    socket.emit("joinParty", { name: partyName, password: "" });
+  };
+
+  // Decline
+  declineBtn.onclick = () => {
+    invitePopup.classList.add("hidden");
+    toast(`❌ You declined ${from}'s invite`);
+  };
+});
+
+// --- REVIEW BUTTON FUNCTIONALITY ---
+const openReviewBtn = document.getElementById("openReviewBtn");
+const reviewModal = document.getElementById("reviewModal");
+const modalOverlay = document.getElementById("modalOverlay");
+const stars = document.querySelectorAll("#starRating .star");
+const submitReview = document.getElementById("submitReview");
+const cancelReview = document.getElementById("cancelReview");
+let selectedRating = 0;
+
+function openReview() {
+  reviewModal.classList.remove('hidden');
+  modalOverlay.classList.remove('hidden');
+  setTimeout(() => reviewModal.classList.add('show'), 10);
+}
+
+function closeReview() {
+  reviewModal.classList.remove('show');
+  modalOverlay.classList.add('hidden');
+  setTimeout(() => reviewModal.classList.add('hidden'), 220);
+}
+
+openReviewBtn.addEventListener('click', openReview);
+modalOverlay.addEventListener('click', closeReview);
+cancelReview.addEventListener('click', closeReview);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReview(); });
+
+// Star hover & selection
+stars.forEach((star, idx) => {
+  star.addEventListener('mouseover', () => {
+    stars.forEach((s, i) => s.classList.toggle('selected', i <= idx));
+  });
+  star.addEventListener('mouseout', () => {
+    stars.forEach((s, i) => s.classList.toggle('selected', i < selectedRating));
+  });
+  star.addEventListener('click', () => {
+    selectedRating = parseInt(star.dataset.value);
+    stars.forEach((s, i) => s.classList.toggle('selected', i < selectedRating));
+  });
+});
+
+// Submit review locally and optionally send to server via socket
+submitReview.addEventListener('click', () => {
+  const text = document.getElementById('reviewText').value.trim();
+  if (selectedRating === 0) return alert('Please select a rating.');
+
+  const review = {
+    rating: selectedRating,
+    feedback: text,
+    user: username || 'Anonymous',
+    timestamp: Date.now()
+  };
+
+  // Save locally (append)
+  const existing = JSON.parse(localStorage.getItem('gc_reviews') || '[]');
+  existing.push(review);
+  localStorage.setItem('gc_reviews', JSON.stringify(existing));
+
+  // Emit over socket so server can persist or forward (server-side handler optional)
+  try { socket.emit('submitReview', review); } catch (e) { /* silent */ }
+
+  toast('Thanks for your feedback!');
+  document.getElementById('reviewText').value = '';
+  selectedRating = 0;
+  stars.forEach(s => s.classList.remove('selected'));
+  closeReview();
+});
+
+// ===== REVIEWS PANEL BEHAVIOR (optional elements removed in main UI) =====
+const reviewsPanel = document.getElementById('reviewsPanel');
+if (reviewsPanel) {
+  const openReviewsBtn = document.getElementById('openReviewsBtn');
+  const reviewsList = document.getElementById('reviewsList');
+  const closeReviews = document.getElementById('closeReviews');
+  const exportReviews = document.getElementById('exportReviews');
+  const clearReviews = document.getElementById('clearReviews');
+  const fetchServerReviews = document.getElementById('fetchServerReviews');
+
+  function renderReviews(arr) {
+    reviewsList.innerHTML = '';
+    if (!arr || arr.length === 0) {
+      reviewsList.innerHTML = '<div class="system">No reviews yet.</div>';
+      return;
+    }
+    arr.slice().reverse().forEach(r => {
+      const d = document.createElement('div'); d.className = 'review';
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const when = new Date(r.timestamp || Date.now()).toLocaleString();
+      meta.textContent = `${r.user || 'Anonymous'} • ${r.rating}★ • ${when}`;
+      const text = document.createElement('div'); text.className = 'text';
+      text.textContent = r.feedback || '';
+      d.appendChild(meta); d.appendChild(text);
+      reviewsList.appendChild(d);
+    });
+  }
+
+  function openReviews() {
+    reviewsPanel.classList.remove('hidden');
+    modalOverlay.classList.remove('hidden');
+    setTimeout(() => reviewsPanel.classList.add('show'), 10);
+    const arr = JSON.parse(localStorage.getItem('gc_reviews') || '[]');
+    renderReviews(arr);
+  }
+
+  function closeReviewsPanel() {
+    reviewsPanel.classList.remove('show');
+    modalOverlay.classList.add('hidden');
+    setTimeout(() => reviewsPanel.classList.add('hidden'), 220);
+  }
+
+  if (openReviewsBtn) openReviewsBtn.addEventListener('click', openReviews);
+  if (closeReviews) closeReviews.addEventListener('click', closeReviewsPanel);
+  modalOverlay.addEventListener('click', () => { closeReview(); if (typeof closeReviewsPanel === 'function') closeReviewsPanel(); });
+
+  if (exportReviews) exportReviews.addEventListener('click', () => {
+    const arr = JSON.parse(localStorage.getItem('gc_reviews') || '[]');
+    const blob = new Blob([JSON.stringify(arr, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'gc_reviews.json'; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  if (clearReviews) clearReviews.addEventListener('click', () => {
+    if (!confirm('Clear local reviews? This only affects the browser storage.')) return;
+    localStorage.removeItem('gc_reviews');
+    renderReviews([]);
+  });
+
+  if (fetchServerReviews) fetchServerReviews.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/reviews.json', { cache: 'no-store' });
+      if (!res.ok) return alert('Server file not found or not accessible.');
+      const arr = await res.json();
+      renderReviews(arr);
+    } catch (err) {
+      alert('Failed to fetch server reviews.');
+    }
+  });
+
+  // Listen for real-time new reviews (if server emits them)
+  socket.on('newReview', (review) => {
+    const arr = JSON.parse(localStorage.getItem('gc_reviews') || '[]');
+    arr.push(review);
+    localStorage.setItem('gc_reviews', JSON.stringify(arr));
+    if (!reviewsPanel.classList.contains('hidden')) renderReviews(arr);
+  });
+}
