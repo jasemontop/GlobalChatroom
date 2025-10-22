@@ -605,3 +605,25 @@ body {
   color: var(--brand);
   transform: scale(1.2);
 }
+
+#pfpPreview {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: none;
+  margin-top: 8px;
+  object-fit: cover;
+  border: 2px solid var(--accent-color);
+  box-shadow: 0 0 6px rgba(126,249,169,0.5);
+  transition: transform 0.2s, box-shadow 0.25s ease;
+}
+
+#pfpPreview.visible {
+  display: block;
+  transform: scale(1);
+}
+
+#pfpPreview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(126,249,169,0.8);
+}
