@@ -9,6 +9,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Temporary in-memory review storage
+let privateReviews = [];
+
 app.use(express.static(path.join(__dirname)));
 
 // Simple reviews storage. Note: many PaaS providers (including Render) have ephemeral filesystems
