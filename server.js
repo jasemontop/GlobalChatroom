@@ -50,12 +50,11 @@ socket.on("setUsername", ({ username, color }) => {
   io.emit("systemMessage", `🟢 ${clean} joined the chat`);
   io.emit("updateUsers", Object.values(users).map(u => u.name));
   sendPartyList();
-  // === Receive review from clients privately ===
-let privateReviews = [];
+ // === Review system ===
 socket.on("submitReview", (review) => {
   review.timestamp = Date.now();
   privateReviews.push(review);
-  console.log("📩 New review:", review);
+  console.log("📩 New review received:", review);
 });
 });
 
@@ -175,7 +174,7 @@ if (user) {
   
 }); // <-- closes the only io.on("connection") block
 
-// 🔒 Admin-only route (place it here)
+// === Admin route for viewing reviews ===
 app.get("/admin/reviews", (req, res) => {
   if (req.query.key !== process.env.ADMIN_KEY) {
     return res.status(403).send("Forbidden");
