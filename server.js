@@ -47,6 +47,14 @@ socket.on("setUsername", ({ username, color }) => {
   io.emit("systemMessage", `🟢 ${clean} joined the chat`);
   io.emit("updateUsers", Object.values(users).map(u => u.name));
   sendPartyList();
+  // === Receive review from clients privately ===
+let privateReviews = [];
+
+socket.on("submitReview", (review) => {
+  review.timestamp = Date.now();
+  privateReviews.push(review);
+  console.log("📩 New review:", review);
+});
 });
 
   // === Party Invite ===
@@ -162,51 +170,41 @@ if (user) {
     sendPartyList();
   });
 
-  // === Receive review from client and persist ===
-  socket.on('submitReview', async (review) => {
+    // === Receive review from client and persist ===
+  socket.on("submitReview", async (review) => {
+    const filePath = path.join(__dirname, "reviews.json");
+
     try {
-      let arr = [];
-      try { arr = JSON.parse(await fs.readFile(REVIEWS_FILE, 'utf8') || '[]'); } catch (err) { arr = []; }
-      arr.push(review);
-      await fs.writeFile(REVIEWS_FILE, JSON.stringify(arr, null, 2), 'utf8');
-      console.log('Saved review', review);
-      // notify admin room
-      io.to('admins').emit('newReview', review);
+      // Read existing reviews
+      let reviews = [];
+      try {
+        const data = await fs.readFile(filePath, "utf8");
+        reviews = JSON.parse(data || "[]");
+      } catch {
+        console.log("Creating new reviews.json...");
+      }
+
+      // Add new review and save it
+      reviews.push(review);
+      await fs.writeFile(filePath, JSON.stringify(reviews, null, 2), "utf8");
+      console.log("✅ Review saved:", review);
+
+      // Broadcast to all users
+      io.emit("newReview", review);
     } catch (err) {
-      console.error('Failed to persist review', err);
+      console.error("❌ Failed to save review:", err);
     }
   });
+}); // <-- closes the only io.on("connection") block
+
+// 🔒 Admin-only route (place it here)
+app.get("/admin/reviews", (req, res) => {
+  if (req.query.key !== process.env.ADMIN_KEY) {
+    return res.status(403).send("Forbidden");
+  }
+  res.json(privateReviews);
 });
 
-const PORT = process.env.PORT || 3000; // works locally and on Render
-
-const fs = require('fs');
-const path = require('path');
-
-// Path to your reviews.json file
-const reviewsFile = path.join(__dirname, 'reviews.json');
-
-// Handle incoming reviews from clients
-io.on('connection', (socket) => {
-  socket.on('submitReview', (review) => {
-    // Read current reviews
-    let reviews = [];
-    try {
-      const data = fs.readFileSync(reviewsFile, 'utf8');
-      reviews = JSON.parse(data || '[]');
-    } catch (err) {
-      console.log('No existing reviews file, creating new one.');
-    }
-
-    // Add new review
-    reviews.push(review);
-
-    // Save back to file
-    fs.writeFileSync(reviewsFile, JSON.stringify(reviews, null, 2));
-
-    // Broadcast to all users
-    io.emit('newReview', review);
-  });
-});
-
+// Start server
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
