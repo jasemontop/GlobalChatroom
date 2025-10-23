@@ -174,13 +174,77 @@ if (user) {
   
 }); // <-- closes the only io.on("connection") block
 
-// === Admin route for viewing reviews ===
 app.get("/admin/reviews", (req, res) => {
   if (req.query.key !== process.env.ADMIN_KEY) {
     return res.status(403).send("Forbidden");
   }
-  res.json(privateReviews);
+
+  // Fancy HTML dashboard
+  const html = `
+  <html>
+    <head>
+      <title>🌿 GlobalChatroom Reviews</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', sans-serif;
+          background: #0f1116;
+          color: #fff;
+          padding: 30px;
+        }
+        h1 {
+          color: #ffcc00;
+          margin-bottom: 20px;
+        }
+        .review {
+          background: #1a1d24;
+          padding: 15px;
+          border-radius: 12px;
+          margin-bottom: 15px;
+          box-shadow: 0 0 10px rgba(255,255,255,0.1);
+        }
+        .meta {
+          color: #aaa;
+          font-size: 0.9em;
+          margin-bottom: 8px;
+        }
+        .rating {
+          color: #ffd700;
+          font-size: 1.2em;
+          margin-right: 10px;
+        }
+        .feedback {
+          font-size: 1.1em;
+          color: #e0e0e0;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>🌿 GlobalChatroom Reviews</h1>
+      ${
+        privateReviews.length === 0
+          ? "<p>No reviews yet 🌙</p>"
+          : privateReviews
+              .map(
+                (r) => `
+          <div class="review">
+            <div class="meta">
+              <span class="rating">${"★".repeat(r.rating || 0)}</span>
+              <strong>${r.user || "Anonymous"}</strong>
+              <span>• ${new Date(r.timestamp).toLocaleString()}</span>
+            </div>
+            <div class="feedback">${r.feedback || ""}</div>
+          </div>
+        `
+              )
+              .join("")
+      }
+    </body>
+  </html>
+  `;
+
+  res.send(html);
 });
+
 
 // Start server
 const PORT = process.env.PORT || 3000;
