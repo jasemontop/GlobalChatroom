@@ -172,31 +172,7 @@ if (user) {
     sendPartyList();
   });
 
-    // === Receive review from client and persist ===
-  socket.on("submitReview", async (review) => {
-    const filePath = path.join(__dirname, "reviews.json");
-
-    try {
-      // Read existing reviews
-      let reviews = [];
-      try {
-        const data = await fs.readFile(filePath, "utf8");
-        reviews = JSON.parse(data || "[]");
-      } catch {
-        console.log("Creating new reviews.json...");
-      }
-
-      // Add new review and save it
-      reviews.push(review);
-      await fs.writeFile(filePath, JSON.stringify(reviews, null, 2), "utf8");
-      console.log("✅ Review saved:", review);
-
-      // Broadcast to all users
-      io.emit("newReview", review);
-    } catch (err) {
-      console.error("❌ Failed to save review:", err);
-    }
-  });
+  
 }); // <-- closes the only io.on("connection") block
 
 // 🔒 Admin-only route (place it here)
