@@ -179,4 +179,34 @@ if (user) {
 });
 
 const PORT = process.env.PORT || 3000; // works locally and on Render
+
+const fs = require('fs');
+const path = require('path');
+
+// Path to your reviews.json file
+const reviewsFile = path.join(__dirname, 'reviews.json');
+
+// Handle incoming reviews from clients
+io.on('connection', (socket) => {
+  socket.on('submitReview', (review) => {
+    // Read current reviews
+    let reviews = [];
+    try {
+      const data = fs.readFileSync(reviewsFile, 'utf8');
+      reviews = JSON.parse(data || '[]');
+    } catch (err) {
+      console.log('No existing reviews file, creating new one.');
+    }
+
+    // Add new review
+    reviews.push(review);
+
+    // Save back to file
+    fs.writeFileSync(reviewsFile, JSON.stringify(reviews, null, 2));
+
+    // Broadcast to all users
+    io.emit('newReview', review);
+  });
+});
+
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
