@@ -52,7 +52,6 @@ socket.on("setUsername", ({ username, color }) => {
   sendPartyList();
   // === Receive review from clients privately ===
 let privateReviews = [];
-
 socket.on("submitReview", (review) => {
   review.timestamp = Date.now();
   privateReviews.push(review);
